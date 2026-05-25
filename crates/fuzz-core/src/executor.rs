@@ -226,7 +226,6 @@ pub fn is_crash_error(error: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::FuzzAccount;
 
     #[test]
     fn test_is_crash_error() {

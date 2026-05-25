@@ -28,7 +28,7 @@ use std::collections::HashSet;
 
 /// SBF instruction (64-bit encoding, same as BPF 64-bit)
 /// Layout (little-endian):
-/// ```
+/// ```text
 /// +----------------+----------------+----------------+----------------+
 /// | opcode:8       | dst_reg:4 src:4| offset:16                      |
 /// +----------------+----------------+----------------+----------------+

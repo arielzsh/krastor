@@ -166,8 +166,15 @@ mod tests {
     fn test_mutate_owner_changes_owner() {
         let mut account = FuzzAccount::default();
         let original = account.owner.clone();
-        mutate_owner(&mut account, &mut thread_rng());
-        assert_ne!(account.owner, original);
+        // Retry up to 10 times — 35% chance of hitting system_program match
+        for _ in 0..10 {
+            mutate_owner(&mut account, &mut thread_rng());
+            if account.owner != original {
+                return;
+            }
+            account.owner = original.clone(); // reset for next attempt
+        }
+        panic!("mutate_owner failed to change owner after 10 attempts");
     }
 
     #[test]
