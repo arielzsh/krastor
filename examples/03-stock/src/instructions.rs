@@ -205,7 +205,7 @@ pub fn snapshot_handler(ctx: Context<SnapshotCtx>, slot: u64, dividend_per_share
     snapshot.claimer_count = 0;
     snapshot.bump = ctx.bumps.snapshot;
 
-    msg!("Dividend snapshot at slot {}: {} USDC/share", clock.slot, dividend_per_share);
+    msg!("Dividend snapshot at slot {}: {} USDC/share", slot, dividend_per_share);
     Ok(())
 }
 

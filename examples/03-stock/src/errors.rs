@@ -34,11 +34,16 @@ pub enum StockError {
     #[msg("Insufficient USDC in dividend pool")]
     InsufficientDividendPool, // 0x1779
 
-    // --- General ---
+    /// General
     #[msg("Unauthorized — admin only")]
     Unauthorized, // 0x1780
-    #[msg("Arithmetic overflow in calculation")]
-    Overflow, // 0x1781
-    #[msg("Amount is zero")]
-    ZeroAmount, // 0x1782
+
+    #[msg("Invalid market status value — must be 0, 1, or 2")]
+    InvalidMarketStatus, // 0x1781
+
+    #[msg("Arithmetic overflow")]
+    Overflow, // 0x1782
+
+    #[msg("Zero amount not allowed")]
+    ZeroAmount, // 0x1783
 }

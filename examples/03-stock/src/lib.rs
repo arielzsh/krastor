@@ -43,6 +43,7 @@ pub mod state;
 pub mod errors;
 pub mod math;
 pub mod instructions;
+pub use instructions::*;
 
 // Program ID placeholder — use `solana-keygen new` for production
 pub const ID: anchor_lang::solana_program::pubkey::Pubkey =
