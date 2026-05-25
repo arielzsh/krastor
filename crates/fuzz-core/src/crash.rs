@@ -4,8 +4,8 @@
 //! triggering sequence is saved as a JSON record. The `shrink` function
 //! reduces the sequence to the minimal reproducible subsequence.
 
+use crate::{FuzzAction, FuzzActionSequence};
 use serde::{Deserialize, Serialize};
-use crate::{FuzzActionSequence, FuzzAction};
 use std::path::Path;
 
 /// A crash record — the minimum information needed to reproduce a failure.
@@ -151,7 +151,9 @@ pub fn shrink(
                     initial_accounts: sequence.initial_accounts.clone(),
                 };
                 if crash_detector(&candidate_seq) {
-                    _removed_count += 1; changed = true; break;
+                    _removed_count += 1;
+                    changed = true;
+                    break;
                 } else {
                     minimal[idx].ix_data = original;
                 }
@@ -165,7 +167,9 @@ pub fn shrink(
                     initial_accounts: sequence.initial_accounts.clone(),
                 };
                 if crash_detector(&candidate_seq) {
-                    _removed_count += 1; changed = true; break;
+                    _removed_count += 1;
+                    changed = true;
+                    break;
                 } else {
                     minimal[idx].accounts = original;
                 }
@@ -192,13 +196,15 @@ mod tests {
     use crate::FuzzAccount;
 
     fn test_actions() -> Vec<FuzzAction> {
-        (0..10).map(|i| FuzzAction {
-            ix_discriminator: [i as u8; 8],
-            ix_name: format!("ix_{}", i),
-            program_id: "Test".into(),
-            accounts: vec![FuzzAccount::default()],
-            ix_data: vec![0u8; 32],
-        }).collect()
+        (0..10)
+            .map(|i| FuzzAction {
+                ix_discriminator: [i as u8; 8],
+                ix_name: format!("ix_{}", i),
+                program_id: "Test".into(),
+                accounts: vec![FuzzAccount::default()],
+                ix_data: vec![0u8; 32],
+            })
+            .collect()
     }
 
     #[test]
@@ -220,8 +226,14 @@ mod tests {
     #[test]
     fn test_crash_record_serialization() {
         let record = CrashRecord {
-            original_sequence: FuzzActionSequence { actions: vec![], initial_accounts: vec![] },
-            minimal_sequence: FuzzActionSequence { actions: vec![], initial_accounts: vec![] },
+            original_sequence: FuzzActionSequence {
+                actions: vec![],
+                initial_accounts: vec![],
+            },
+            minimal_sequence: FuzzActionSequence {
+                actions: vec![],
+                initial_accounts: vec![],
+            },
             description: "test crash".into(),
             crash_type: CrashType::ExecutionError,
             discovered_at_round: 42,

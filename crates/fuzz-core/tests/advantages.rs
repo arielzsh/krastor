@@ -7,9 +7,9 @@
 //!
 //! Reference: mindmodel.txt §二
 
-use krastor_fuzz_core::*;
-use krastor_fuzz_core::mutator::*;
 use krastor_fuzz_core::invariant::*;
+use krastor_fuzz_core::mutator::*;
+use krastor_fuzz_core::*;
 use std::collections::HashMap;
 
 // ====================================================================
@@ -58,8 +58,11 @@ fn adv1_coverage_guided_reaches_deeply_nested_branch() {
 
     // Krastor reached the deep branch in 3 directed steps.
     // Proptest would need ~2^64 uniform trials.
-    assert!(discovered >= 2, "Coverage-guided exploration reached {} new edges",
-            discovered);
+    assert!(
+        discovered >= 2,
+        "Coverage-guided exploration reached {} new edges",
+        discovered
+    );
 }
 
 // ====================================================================
@@ -127,16 +130,14 @@ fn adv2_auto_sequence_discovers_flash_loan_pattern() {
 
 #[test]
 fn adv3_targeted_mutations_trigger_auth_bypass_consistently() {
-    let mut accounts = vec![
-        FuzzAccount {
-            key: "vault".into(),
-            owner: "Program111111111111111111111111111111".into(),
-            lamports: 1_000_000,
-            is_writable: true,
-            is_signer: false,
-            ..Default::default()
-        }
-    ];
+    let mut accounts = vec![FuzzAccount {
+        key: "vault".into(),
+        owner: "Program111111111111111111111111111111".into(),
+        lamports: 1_000_000,
+        is_writable: true,
+        is_signer: false,
+        ..Default::default()
+    }];
 
     let config = MutationConfig {
         replace_owner: 1.0, // 100% — guarantee it triggers
@@ -145,8 +146,10 @@ fn adv3_targeted_mutations_trigger_auth_bypass_consistently() {
 
     let mutated = mutate_accounts(&mut accounts, &config, &mut rand::thread_rng());
     assert!(mutated > 0, "Owner mutation didn't fire");
-    assert_ne!(accounts[0].owner, "Program111111111111111111111111111111",
-        "Owner should have been mutated by Krastor's directed attack");
+    assert_ne!(
+        accounts[0].owner, "Program111111111111111111111111111111",
+        "Owner should have been mutated by Krastor's directed attack"
+    );
 
     // This mutation would trigger an authorization bypass (missing owner check).
     // A generic fuzzer with random byte flips has ~0.1% chance of hitting
@@ -162,7 +165,8 @@ fn adv3a_lamports_zero_triggers_rent_bypass() {
     }];
 
     let config = MutationConfig {
-        zero_lamports: 1.0, ..MutationConfig::default()
+        zero_lamports: 1.0,
+        ..MutationConfig::default()
     };
     mutate_accounts(&mut accounts, &config, &mut rand::thread_rng());
     assert_eq!(accounts[0].lamports, 0);
@@ -178,11 +182,14 @@ fn adv3b_data_clear_triggers_empty_account_attack() {
     }];
 
     let config = MutationConfig {
-        clear_data: 1.0, ..MutationConfig::default()
+        clear_data: 1.0,
+        ..MutationConfig::default()
     };
     mutate_accounts(&mut accounts, &config, &mut rand::thread_rng());
-    assert!(accounts[0].data.is_empty(),
-        "Data was not cleared — empty account attack wouldn't be triggered");
+    assert!(
+        accounts[0].data.is_empty(),
+        "Data was not cleared — empty account attack wouldn't be triggered"
+    );
 }
 
 // ====================================================================
@@ -253,8 +260,16 @@ fn adv5_dual_detection_catches_what_neither_alone_catches() {
 
     // Setup: supply conservation invariant
     let initial = vec![
-        FuzzAccount { key: "A".into(), lamports: 100, ..Default::default() },
-        FuzzAccount { key: "B".into(), lamports: 200, ..Default::default() },
+        FuzzAccount {
+            key: "A".into(),
+            lamports: 100,
+            ..Default::default()
+        },
+        FuzzAccount {
+            key: "B".into(),
+            lamports: 200,
+            ..Default::default()
+        },
     ];
 
     // Whitebox check: coverage bitmap records the edge
@@ -265,13 +280,20 @@ fn adv5_dual_detection_catches_what_neither_alone_catches() {
     // Simulate a bug: transfer 150 from B to A, but A only received 100 (50 lost)
     let mut current = initial.clone();
     current[0].lamports = 200; // A: 100 → 200 (100 gain)
-    current[1].lamports = 50;  // B: 200 → 50 (150 loss)
+    current[1].lamports = 50; // B: 200 → 50 (150 loss)
 
     // Supply conservation invariant should FAIL — 50 lamports went missing
     let violation = invariant_supply_conservation(&current, &initial, 0);
-    assert!(violation.is_some(), "Supply conservation should detect 50 lamports gone missing out of 300");
+    assert!(
+        violation.is_some(),
+        "Supply conservation should detect 50 lamports gone missing out of 300"
+    );
     let msg = violation.unwrap();
-    assert!(msg.contains("50") || msg.contains("300"), "Violation explains the lamport delta: {}", msg);
+    assert!(
+        msg.contains("50") || msg.contains("300"),
+        "Violation explains the lamport delta: {}",
+        msg
+    );
 
     // Without coverage: never know if this path was tested
     // Without invariants: never know the result was wrong

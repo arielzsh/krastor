@@ -10,15 +10,15 @@
 //!   └─ log_coverage()          → (optional) coverage bitmap collection
 //! ```
 
-pub mod mutator;
 pub mod fuzzer;
+pub mod mutator;
 pub use fuzzer::Fuzzer;
-pub mod invariant;
-pub mod executor;
 pub mod crash;
+pub mod executor;
+pub mod invariant;
 
-use serde::{Deserialize, Serialize};
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 // ============ FuzzAccount ============
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -130,7 +130,10 @@ impl Default for CoverageBitmap {
 
 impl CoverageBitmap {
     pub fn new() -> Self {
-        Self { edges: vec![0u8; 65536], covered_edges: 0 }
+        Self {
+            edges: vec![0u8; 65536],
+            covered_edges: 0,
+        }
     }
 
     /// Record an edge transition (prev → cur)
@@ -148,7 +151,9 @@ impl CoverageBitmap {
 
     /// Check if this bitmap has new coverage compared to the global one
     pub fn has_new_coverage(&self, global: &CoverageBitmap) -> bool {
-        self.edges.iter().zip(global.edges.iter())
+        self.edges
+            .iter()
+            .zip(global.edges.iter())
             .any(|(a, b)| a > b)
     }
 
@@ -167,7 +172,6 @@ fn random_bytes(rng: &mut impl Rng, len: usize) -> Vec<u8> {
 
 // Simple base58 encode (placeholder — real impl would use bs58 crate)
 pub fn bs58_encode(data: &[u8]) -> String {
-    
     const ALPHABET: &[u8] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
     let mut result = String::new();
     let mut num = 0u128;

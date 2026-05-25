@@ -1,12 +1,12 @@
 //! Fuzzer — main fuzzing engine that orchestrates rounds of random actions,
 //! account mutations, LiteSVM execution, and invariant checking.
 
-use rand::Rng;
-use crate::{FuzzAccount, FuzzAction, FuzzActionSequence, CoverageBitmap};
-use crate::mutator::{MutationConfig, mutate_accounts};
-use crate::invariant::{InvariantRegistry, InvariantResult};
 use crate::crash::CrashRecord;
 use crate::executor::LiteSvmExecutor;
+use crate::invariant::{InvariantRegistry, InvariantResult};
+use crate::mutator::{mutate_accounts, MutationConfig};
+use crate::{CoverageBitmap, FuzzAccount, FuzzAction, FuzzActionSequence};
+use rand::Rng;
 
 /// Main fuzzer state machine.
 pub struct Fuzzer {
@@ -86,7 +86,8 @@ impl Fuzzer {
 
     /// Register an instruction that the fuzzer can randomly select.
     pub fn register_instruction(&mut self, name: &str, discriminator: [u8; 8]) {
-        self.available_instructions.push((name.to_string(), discriminator));
+        self.available_instructions
+            .push((name.to_string(), discriminator));
     }
 
     /// Generate a random action: pick a random instruction + random account params.
@@ -163,7 +164,9 @@ impl Fuzzer {
             }
             None => {
                 // Fallback: no executor configured, treat as error
-                Err(anyhow::anyhow!("No executor configured — call deploy_program() first"))
+                Err(anyhow::anyhow!(
+                    "No executor configured — call deploy_program() first"
+                ))
             }
         };
 
@@ -171,11 +174,9 @@ impl Fuzzer {
         let mut invariant_results = Vec::new();
         let is_crash = execution_result.is_err();
         if !is_crash {
-            invariant_results = self.invariants.check_all(
-                &working_accounts,
-                &self.accounts,
-                self.round_count,
-            );
+            invariant_results =
+                self.invariants
+                    .check_all(&working_accounts, &self.accounts, self.round_count);
         } else {
             // On crash, reset the executor for the next round
             let _ = self.reset_executor();

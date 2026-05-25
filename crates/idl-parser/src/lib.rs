@@ -7,8 +7,8 @@
 //! - Invariant function templates
 //! - krastor.toml configuration skeleton
 
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -133,11 +133,25 @@ impl IdlType {
     pub fn type_name(&self) -> String {
         match self {
             IdlType::V0(s) => s.clone(),
-            IdlType::V1 { kind, vec, option, defined, .. } => {
-                if let Some(ref k) = kind { return k.clone(); }
-                if let Some(ref v) = vec { return format!("Vec<{}>", v.type_name()); }
-                if let Some(ref o) = option { return format!("Option<{}>", o.type_name()); }
-                if let Some(ref d) = defined { return d.clone(); }
+            IdlType::V1 {
+                kind,
+                vec,
+                option,
+                defined,
+                ..
+            } => {
+                if let Some(ref k) = kind {
+                    return k.clone();
+                }
+                if let Some(ref v) = vec {
+                    return format!("Vec<{}>", v.type_name());
+                }
+                if let Some(ref o) = option {
+                    return format!("Option<{}>", o.type_name());
+                }
+                if let Some(ref d) = defined {
+                    return d.clone();
+                }
                 "unknown".into()
             }
         }
@@ -296,7 +310,10 @@ fn generate_instruction_dispatch(idl: &Idl, code: &mut String) {
 
     for ix in &idl.instructions {
         let fn_name = to_snake_case(&ix.name);
-        code.push_str(&format!("        \"{}\" => {}(accounts, data),\n", ix.name, fn_name));
+        code.push_str(&format!(
+            "        \"{}\" => {}(accounts, data),\n",
+            ix.name, fn_name
+        ));
     }
 
     code.push_str("        _ => eprintln!(\"Unknown instruction: {}\", ix_name),\n");
@@ -311,11 +328,24 @@ fn generate_instruction_dispatch(idl: &Idl, code: &mut String) {
         code.push_str("    _data: &[u8],\n");
         code.push_str(") {\n");
         code.push_str("    // Instruction discriminator + args deserialization\n");
-        code.push_str(&format!("    // {} accounts: {:?}\n", ix.accounts.len(), ix.accounts.iter().map(|a| match a {
-            IdlAccountItem::Named { name, .. } => name.as_str(),
-            IdlAccountItem::Id(m) => m.name.as_str(),
-        }).collect::<Vec<_>>()));
-        code.push_str(&format!("    // args: {:?}\n", ix.args.iter().map(|f| format!("{}: {}", f.name, f.r#type.type_name())).collect::<Vec<_>>()));
+        code.push_str(&format!(
+            "    // {} accounts: {:?}\n",
+            ix.accounts.len(),
+            ix.accounts
+                .iter()
+                .map(|a| match a {
+                    IdlAccountItem::Named { name, .. } => name.as_str(),
+                    IdlAccountItem::Id(m) => m.name.as_str(),
+                })
+                .collect::<Vec<_>>()
+        ));
+        code.push_str(&format!(
+            "    // args: {:?}\n",
+            ix.args
+                .iter()
+                .map(|f| format!("{}: {}", f.name, f.r#type.type_name()))
+                .collect::<Vec<_>>()
+        ));
         code.push_str("    // TODO: deserialize args from _data using anchor::AnchorDeserialize\n");
         code.push_str("}\n\n");
     }
@@ -331,12 +361,20 @@ fn generate_invariant_templates(idl: &Idl, code: &mut String) {
     code.push_str("    fuzzer.invariants.register(\"state_machine\", Box::new(invariant_state_machine_paused));\n");
 
     code.push('\n');
-    code.push_str(&format!("    // {} instructions available for random selection\n", idl.instructions.len()));
+    code.push_str(&format!(
+        "    // {} instructions available for random selection\n",
+        idl.instructions.len()
+    ));
     for ix in &idl.instructions {
-        let disc = ix.discriminator.as_ref()
+        let disc = ix
+            .discriminator
+            .as_ref()
             .map(|d| format!("{:?}", d))
             .unwrap_or_else(|| "// UNCERTAINTY: discriminator not in IDL, must be derived".into());
-        code.push_str(&format!("    fuzzer.register_instruction(\"{}\", {});\n", ix.name, disc));
+        code.push_str(&format!(
+            "    fuzzer.register_instruction(\"{}\", {});\n",
+            ix.name, disc
+        ));
     }
 
     code.push_str("}\n");
@@ -401,10 +439,7 @@ format = "html"
 path = "target/idl/{}.json"
 version = "{}"
 "#,
-        config.program_id,
-        config.max_sequence_length,
-        config.program_name,
-        idl.version,
+        config.program_id, config.max_sequence_length, config.program_name, idl.version,
     )
 }
 
@@ -481,7 +516,12 @@ mod tests {
     fn test_generate_krastor_toml() {
         let json = r#"{"version":"0.1.0","name":"test","instructions":[],"accounts":[],"types":[],"events":[],"errors":[]}"#;
         let idl = parse_idl_str(json).unwrap();
-        let config = HarnessConfig { program_name: "test".into(), program_id: "Test1".into(), output_dir: ".".into(), max_sequence_length: 10 };
+        let config = HarnessConfig {
+            program_name: "test".into(),
+            program_id: "Test1".into(),
+            output_dir: ".".into(),
+            max_sequence_length: 10,
+        };
         let toml = generate_krastor_toml(&idl, &config);
         assert!(toml.contains("program_id"));
         assert!(toml.contains("mutation_config"));

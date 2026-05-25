@@ -41,7 +41,9 @@ impl Default for InvariantRegistry {
 
 impl InvariantRegistry {
     pub fn new() -> Self {
-        Self { invariants: Vec::new() }
+        Self {
+            invariants: Vec::new(),
+        }
     }
 
     /// Register a named invariant function.
@@ -147,8 +149,16 @@ mod tests {
 
     fn make_test_accounts() -> Vec<FuzzAccount> {
         vec![
-            FuzzAccount { key: "A".into(), lamports: 100, ..Default::default() },
-            FuzzAccount { key: "B".into(), lamports: 200, ..Default::default() },
+            FuzzAccount {
+                key: "A".into(),
+                lamports: 100,
+                ..Default::default()
+            },
+            FuzzAccount {
+                key: "B".into(),
+                lamports: 200,
+                ..Default::default()
+            },
         ]
     }
 

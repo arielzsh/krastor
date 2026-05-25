@@ -3,8 +3,8 @@
 
 #[cfg(test)]
 mod tests {
-    use krastor_fuzz_core::{FuzzAccount, FuzzAction};
     use krastor_fuzz_core::executor::LiteSvmExecutor;
+    use krastor_fuzz_core::{FuzzAccount, FuzzAction};
     use solana_pubkey::Pubkey;
     use solana_sdk_ids::system_program;
 
@@ -102,8 +102,10 @@ mod tests {
                 match result {
                     Ok(ref results) => {
                         for r in results {
-                            println!("  Action: success={}, cu={}, logs={:?}",
-                                r.success, r.compute_units, r.logs);
+                            println!(
+                                "  Action: success={}, cu={}, logs={:?}",
+                                r.success, r.compute_units, r.logs
+                            );
                         }
                     }
                     Err(ref e) => {
@@ -114,8 +116,10 @@ mod tests {
                 // Even if it fails (e.g., due to signature verification),
                 // the executor API is working correctly — this is a real
                 // LiteSVM call, not a placeholder.
-                assert!(result.is_ok() || result.is_err(),
-                    "Executor must return a result (proving real LiteSVM call)");
+                assert!(
+                    result.is_ok() || result.is_err(),
+                    "Executor must return a result (proving real LiteSVM call)"
+                );
             }
             Err(e) => {
                 // It's OK if system program can't be added (already built-in)

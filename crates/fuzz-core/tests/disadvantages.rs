@@ -11,11 +11,11 @@
 //! 2. Long Dependency Chain → Only LiteSVM, no external processes
 //! 3. Missing Shrinking → Built-in binary+greedy shrinking
 
-use krastor_fuzz_core::*;
+use krastor_fuzz_core::crash::{shrink, CrashRecord, CrashType};
 use krastor_fuzz_core::fuzzer::Fuzzer;
 use krastor_fuzz_core::invariant::InvariantRegistry;
-use krastor_fuzz_core::crash::{CrashRecord, CrashType, shrink};
-use krastor_fuzz_core::mutator::{MutationConfig, mutate_accounts};
+use krastor_fuzz_core::mutator::{mutate_accounts, MutationConfig};
+use krastor_fuzz_core::*;
 
 // ====================================================================
 // Disadvantage 1: SBF INSTRUMENTATION FRAGILITY
@@ -43,8 +43,10 @@ fn dis1_core_fuzzer_works_without_instrumentor() {
     // 1. Fuzzer struct has ZERO knowledge of instrumentor types
     // (No `use krastor_instrumentor::*` anywhere in fuzz-core)
     let fuzzer = Fuzzer::new("TestProg11111111111111111111111111111".into());
-    assert!(fuzzer.global_coverage.edges.len() == 65536,
-        "CoverageBitmap works independently of instrumentor");
+    assert!(
+        fuzzer.global_coverage.edges.len() == 65536,
+        "CoverageBitmap works independently of instrumentor"
+    );
 
     // 2. Invariant registry is independent
     let mut registry = InvariantRegistry::new();
@@ -107,8 +109,10 @@ fn dis2_dependency_chain_is_minimal() {
     // We can verify this at the architecture level:
     // The executor module ONLY imports LiteSVM — no Bankrun, no Validator.
     let expected_deps = vec!["litesvm", "rand", "serde", "anyhow"];
-    assert!(!expected_deps.is_empty(),
-        "Dependency chain should be: cargo → litesvm → solana (2 levels)");
+    assert!(
+        !expected_deps.is_empty(),
+        "Dependency chain should be: cargo → litesvm → solana (2 levels)"
+    );
 
     // Compare with old Trident: cargo → anchor-cli → solana-cli → test-validator → bankrun
     // That's 4 levels of transitive deps, each with its own install failures.
@@ -135,7 +139,10 @@ fn dis2a_litesvm_is_pure_rust_in_process() {
 
     // For now, verify the architectural constraint holds:
     // No import of solana-test-validator, bankrun, or anchor-cli anywhere in fuzz-core.
-    assert!(true, "LiteSVM is embedded — zero external processes required for execution");
+    assert!(
+        true,
+        "LiteSVM is embedded — zero external processes required for execution"
+    );
 }
 
 // ====================================================================
@@ -175,18 +182,23 @@ fn dis3_shrinking_reduces_crash_sequence_size() {
     };
 
     // Crash detector: crashes if ix_5 is in the sequence
-    let detector = |seq: &FuzzActionSequence| -> bool {
-        seq.actions.iter().any(|a| a.ix_name == "ix_5")
-    };
+    let detector =
+        |seq: &FuzzActionSequence| -> bool { seq.actions.iter().any(|a| a.ix_name == "ix_5") };
 
     let (minimal, removed) = shrink(&sequence, &detector);
 
     // After shrinking, the sequence should be MUCH smaller (ideally just ix_5)
-    assert!(minimal.actions.len() < sequence.actions.len(),
+    assert!(
+        minimal.actions.len() < sequence.actions.len(),
         "Shrinking reduced {} actions to {} (removed {})",
-        sequence.actions.len(), minimal.actions.len(), removed);
-    assert!(minimal.actions.iter().any(|a| a.ix_name == "ix_5"),
-        "Shrunken sequence still contains the critical instruction");
+        sequence.actions.len(),
+        minimal.actions.len(),
+        removed
+    );
+    assert!(
+        minimal.actions.iter().any(|a| a.ix_name == "ix_5"),
+        "Shrunken sequence still contains the critical instruction"
+    );
     assert!(removed > 0, "Shrinking removed at least some instructions");
 
     // A typical result: 10 → 1-3 instructions, ~7+ removed
@@ -200,41 +212,60 @@ fn dis3a_shrinking_handles_all_noise_instructions() {
     let actions: Vec<FuzzAction> = (0..50)
         .map(|i| FuzzAction {
             ix_discriminator: [i as u8; 8],
-            ix_name: if i == 37 { "critical".into() } else { format!("noise_{}", i) },
+            ix_name: if i == 37 {
+                "critical".into()
+            } else {
+                format!("noise_{}", i)
+            },
             program_id: "Test".into(),
             accounts: vec![FuzzAccount::default()],
             ix_data: vec![0u8; 16],
         })
         .collect();
 
-    let sequence = FuzzActionSequence { actions: actions.clone(), initial_accounts: vec![] };
-
-    let detector = |seq: &FuzzActionSequence| -> bool {
-        seq.actions.iter().any(|a| a.ix_name == "critical")
+    let sequence = FuzzActionSequence {
+        actions: actions.clone(),
+        initial_accounts: vec![],
     };
+
+    let detector =
+        |seq: &FuzzActionSequence| -> bool { seq.actions.iter().any(|a| a.ix_name == "critical") };
 
     let (minimal, _removed) = shrink(&sequence, &detector);
 
     // Should have at most 5 instructions remaining (ideally just "critical")
-    assert!(minimal.actions.len() <= 5,
-        "50-instruction crash should shrink to ≤5, got {}", minimal.actions.len());
-    assert!(minimal.actions.iter().any(|a| a.ix_name == "critical"),
-        "Critical instruction still present after shrinking");
+    assert!(
+        minimal.actions.len() <= 5,
+        "50-instruction crash should shrink to ≤5, got {}",
+        minimal.actions.len()
+    );
+    assert!(
+        minimal.actions.iter().any(|a| a.ix_name == "critical"),
+        "Critical instruction still present after shrinking"
+    );
 }
 
 #[test]
 fn dis3b_crash_record_serialization_preserves_minimal_sequence() {
     // Verify that crash JSON correctly records the shrunken sequence
-    let actions = (0..8).map(|i| FuzzAction {
-        ix_discriminator: [i as u8; 8],
-        ix_name: format!("ix_{}", i),
-        program_id: "Test".into(),
-        accounts: vec![FuzzAccount::default()],
-        ix_data: vec![0u8; 16],
-    }).collect();
+    let actions = (0..8)
+        .map(|i| FuzzAction {
+            ix_discriminator: [i as u8; 8],
+            ix_name: format!("ix_{}", i),
+            program_id: "Test".into(),
+            accounts: vec![FuzzAccount::default()],
+            ix_data: vec![0u8; 16],
+        })
+        .collect();
 
-    let original = FuzzActionSequence { actions, initial_accounts: vec![] };
-    let minimal = FuzzActionSequence { actions: original.actions[..2].to_vec(), initial_accounts: vec![] };
+    let original = FuzzActionSequence {
+        actions,
+        initial_accounts: vec![],
+    };
+    let minimal = FuzzActionSequence {
+        actions: original.actions[..2].to_vec(),
+        initial_accounts: vec![],
+    };
 
     let record = CrashRecord {
         original_sequence: original,
@@ -252,9 +283,11 @@ fn dis3b_crash_record_serialization_preserves_minimal_sequence() {
     assert_eq!(decoded.instructions_removed, 6);
     assert_eq!(decoded.minimal_sequence.actions.len(), 2);
     assert_eq!(decoded.original_sequence.actions.len(), 8);
-    assert!(decoded.instructions_removed > 0,
+    assert!(
+        decoded.instructions_removed > 0,
         "Shrinking info preserved: original={} → minimal={} ({} removed)",
         decoded.original_sequence.actions.len(),
         decoded.minimal_sequence.actions.len(),
-        decoded.instructions_removed);
+        decoded.instructions_removed
+    );
 }

@@ -1,8 +1,8 @@
 //! Report generation — Coverage HTML + crash JSON persistence + GitHub Actions CI template.
 //! Generates self-contained HTML with embedded CSS (no external dependencies).
 
-use krastor_fuzz_core::CoverageBitmap;
 use krastor_fuzz_core::crash::CrashRecord;
+use krastor_fuzz_core::CoverageBitmap;
 use std::path::Path;
 
 /// Generate a self-contained HTML coverage report.
@@ -14,7 +14,9 @@ pub fn generate_html_report(
 ) -> String {
     let coverage_pct = if !coverage.edges.is_empty() {
         (coverage.covered_edges as f64 / coverage.edges.len() as f64) * 100.0
-    } else { 0.0 };
+    } else {
+        0.0
+    };
 
     format!(
         r#"<!DOCTYPE html>
@@ -156,7 +158,12 @@ pub fn persist_crash(crash: &CrashRecord, output_dir: &Path) -> anyhow::Result<(
     std::fs::create_dir_all(output_dir)?;
     let filename = format!(
         "crash_{}_{}.json",
-        crash.crash_type.to_string().to_lowercase().replace('(', "_").replace(')', ""),
+        crash
+            .crash_type
+            .to_string()
+            .to_lowercase()
+            .replace('(', "_")
+            .replace(')', ""),
         crash.discovered_at_round,
     );
     crash.save(&output_dir.join(filename))?;
@@ -166,24 +173,31 @@ pub fn persist_crash(crash: &CrashRecord, output_dir: &Path) -> anyhow::Result<(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use krastor_fuzz_core::CoverageBitmap;
     use krastor_fuzz_core::crash::{CrashRecord, CrashType};
+    use krastor_fuzz_core::CoverageBitmap;
     use krastor_fuzz_core::FuzzActionSequence;
 
     #[test]
     fn test_generate_html_report() {
-        let cov = CoverageBitmap { edges: vec![1u8; 1000], covered_edges: 500 };
-        let crashes = vec![
-            CrashRecord {
-                original_sequence: FuzzActionSequence { actions: vec![], initial_accounts: vec![] },
-                minimal_sequence: FuzzActionSequence { actions: vec![], initial_accounts: vec![] },
-                description: "test crash".into(),
-                crash_type: CrashType::ExecutionError,
-                discovered_at_round: 42,
-                timestamp: "2026-01-01T00:00:00Z".into(),
-                instructions_removed: 5,
-            }
-        ];
+        let cov = CoverageBitmap {
+            edges: vec![1u8; 1000],
+            covered_edges: 500,
+        };
+        let crashes = vec![CrashRecord {
+            original_sequence: FuzzActionSequence {
+                actions: vec![],
+                initial_accounts: vec![],
+            },
+            minimal_sequence: FuzzActionSequence {
+                actions: vec![],
+                initial_accounts: vec![],
+            },
+            description: "test crash".into(),
+            crash_type: CrashType::ExecutionError,
+            discovered_at_round: 42,
+            timestamp: "2026-01-01T00:00:00Z".into(),
+            instructions_removed: 5,
+        }];
 
         let html = generate_html_report(&cov, &crashes, 10000, "test_prog");
         assert!(html.contains("test_prog"));

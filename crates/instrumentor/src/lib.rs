@@ -19,7 +19,7 @@
 //! - LLVM BPF backend: https://github.com/llvm/llvm-project/tree/main/llvm/lib/Target/BPF
 //! - Solana SBF documentation: https://solana.com/docs/programs/lang-rust
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use goblin::elf::Elf;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -57,7 +57,14 @@ impl SbfInstruction {
         let offset = i16::from_le_bytes([bytes[2], bytes[3]]);
         let immediate = i32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
 
-        Ok(SbfInstruction { opcode, dst_reg, src_reg, offset, immediate, address })
+        Ok(SbfInstruction {
+            opcode,
+            dst_reg,
+            src_reg,
+            offset,
+            immediate,
+            address,
+        })
     }
 
     /// Encode back to 8 bytes
@@ -106,7 +113,10 @@ impl SbfInstruction {
     pub fn branch_target(&self) -> Option<u64> {
         if self.is_branch() && self.branch_type() != Some(BranchType::EXIT) {
             // For relative jumps: target = pc + 1 + offset (in instructions)
-            Some(self.address.wrapping_add((self.offset as i64 + 1) as u64 * 8))
+            Some(
+                self.address
+                    .wrapping_add((self.offset as i64 + 1) as u64 * 8),
+            )
         } else {
             None
         }
@@ -115,7 +125,20 @@ impl SbfInstruction {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BranchType {
-    JA, JEQ, JGT, JGE, JSET, JNE, JSGT, JSGE, CALL, EXIT, JLT, JLE, JSLT, JSLE,
+    JA,
+    JEQ,
+    JGT,
+    JGE,
+    JSET,
+    JNE,
+    JSGT,
+    JSGE,
+    CALL,
+    EXIT,
+    JLT,
+    JLE,
+    JSLT,
+    JSLE,
 }
 
 // ============ SBF Decoder ============
@@ -264,7 +287,9 @@ impl InstrumentedCoverageMap {
 
     /// Coverage percentage
     pub fn coverage_pct(&self) -> f64 {
-        if self.probes.is_empty() { return 0.0; }
+        if self.probes.is_empty() {
+            return 0.0;
+        }
         (self.covered_edges() as f64) / (self.probes.len() as f64) * 100.0
     }
 }
@@ -275,7 +300,9 @@ impl InstrumentedCoverageMap {
 pub fn parse_sbf_elf(data: &[u8]) -> Result<ElfSectionInfo> {
     let elf = Elf::parse(data)?;
 
-    let text_header = elf.section_headers.iter()
+    let text_header = elf
+        .section_headers
+        .iter()
         .find(|sh| elf.shdr_strtab.get_at(sh.sh_name).unwrap_or("") == ".text")
         .ok_or_else(|| anyhow!(".text section not found in ELF"))?;
 
@@ -284,7 +311,9 @@ pub fn parse_sbf_elf(data: &[u8]) -> Result<ElfSectionInfo> {
     let text_addr = text_header.sh_addr;
     let text_data = &data[text_offset..text_offset + text_size];
 
-    let bss_header = elf.section_headers.iter()
+    let bss_header = elf
+        .section_headers
+        .iter()
         .find(|sh| elf.shdr_strtab.get_at(sh.sh_name).unwrap_or("") == ".bss")
         .map(|sh| BssInfo {
             addr: sh.sh_addr,
@@ -334,7 +363,11 @@ mod tests {
         // JA instruction (BPF_JMP | BPF_JA)
         let insn = SbfInstruction {
             opcode: 0x05,
-            dst_reg: 0, src_reg: 0, offset: 10, immediate: 0, address: 0,
+            dst_reg: 0,
+            src_reg: 0,
+            offset: 10,
+            immediate: 0,
+            address: 0,
         };
         assert!(insn.is_branch());
         assert_eq!(insn.branch_type(), Some(BranchType::JA));
@@ -345,7 +378,11 @@ mod tests {
     fn test_non_branch() {
         let insn = SbfInstruction {
             opcode: 0x07,
-            dst_reg: 1, src_reg: 2, offset: 0, immediate: 0, address: 0,
+            dst_reg: 1,
+            src_reg: 2,
+            offset: 0,
+            immediate: 0,
+            address: 0,
         };
         assert!(!insn.is_branch());
     }
@@ -353,8 +390,12 @@ mod tests {
     #[test]
     fn test_encode_roundtrip() {
         let insn = SbfInstruction {
-            opcode: 0xB7, dst_reg: 3, src_reg: 0, offset: 0,
-            immediate: 42, address: 0x100,
+            opcode: 0xB7,
+            dst_reg: 3,
+            src_reg: 0,
+            offset: 0,
+            immediate: 42,
+            address: 0x100,
         };
         let bytes = insn.encode();
         let decoded = SbfInstruction::decode(&bytes, 0x100).unwrap();
@@ -366,8 +407,16 @@ mod tests {
     #[test]
     fn test_coverage_map() {
         let probes = vec![
-            ProbeLocation { address: 0x100, edge_id: 0, original_bytes: vec![0; 16] },
-            ProbeLocation { address: 0x200, edge_id: 1, original_bytes: vec![0; 16] },
+            ProbeLocation {
+                address: 0x100,
+                edge_id: 0,
+                original_bytes: vec![0; 16],
+            },
+            ProbeLocation {
+                address: 0x200,
+                edge_id: 1,
+                original_bytes: vec![0; 16],
+            },
         ];
         let mut map = InstrumentedCoverageMap::new(65536, probes);
         assert_eq!(map.covered_edges(), 0);

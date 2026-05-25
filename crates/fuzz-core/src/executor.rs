@@ -4,7 +4,7 @@
 //! LiteSVM is an embedded, pure-Rust Solana runtime. No external validator process needed.
 
 use crate::{FuzzAccount, FuzzAction};
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use litesvm::LiteSVM;
 use solana_account::{Account, ReadableAccount};
 use solana_instruction::{AccountMeta, Instruction};
@@ -47,7 +47,11 @@ impl LiteSvmExecutor {
         svm.add_program(program_id, program_bytes)
             .map_err(|e| anyhow!("Failed to deploy program {}: {}", program_id_str, e))?;
 
-        Ok(Self { svm, payer, program_id })
+        Ok(Self {
+            svm,
+            payer,
+            program_id,
+        })
     }
 
     /// Load a program binary from disk and create the executor.
@@ -83,7 +87,8 @@ impl LiteSvmExecutor {
                 executable: false,
                 rent_epoch: acc.rent_epoch,
             };
-            self.svm.set_account(pubkey, account.clone())
+            self.svm
+                .set_account(pubkey, account.clone())
                 .map_err(|e| anyhow!("Failed to set account {}: {}", acc.key, e))?;
         }
         Ok(())
@@ -241,10 +246,7 @@ mod tests {
     fn test_executor_new_with_empty_program() {
         // A minimal valid ELF just for instantiation testing
         // LiteSVM expects a valid ELF; an empty slice will fail gracefully
-        let result = LiteSvmExecutor::new(
-            "Prog111111111111111111111111111111111",
-            &[],
-        );
+        let result = LiteSvmExecutor::new("Prog111111111111111111111111111111111", &[]);
         assert!(result.is_err()); // empty bytes should fail to deploy
     }
 }

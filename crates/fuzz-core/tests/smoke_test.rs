@@ -7,7 +7,7 @@
 
 #[cfg(test)]
 mod smoke_tests {
-    use krastor_fuzz_core::executor::{LiteSvmExecutor, is_crash_error};
+    use krastor_fuzz_core::executor::{is_crash_error, LiteSvmExecutor};
     use krastor_fuzz_core::FuzzAccount;
     use solana_pubkey::Pubkey;
     use solana_sdk_ids::system_program;
@@ -26,25 +26,27 @@ mod smoke_tests {
         .expect("Executor should init successfully");
 
         let alice = Pubkey::new_unique();
-        let accounts = vec![
-            FuzzAccount {
-                key: alice.to_string(),
-                data: b"hello smoke test".to_vec(),
-                owner: system_program::ID.to_string(),
-                lamports: 5_000_000_000,
-                rent_epoch: u64::MAX,
-                is_writable: true,
-                is_signer: false,
-                seeds: None,
-            },
-        ];
+        let accounts = vec![FuzzAccount {
+            key: alice.to_string(),
+            data: b"hello smoke test".to_vec(),
+            owner: system_program::ID.to_string(),
+            lamports: 5_000_000_000,
+            rent_epoch: u64::MAX,
+            is_writable: true,
+            is_signer: false,
+            seeds: None,
+        }];
 
         // Write accounts into the VM
-        executor.set_accounts(&accounts).expect("set_accounts should succeed");
+        executor
+            .set_accounts(&accounts)
+            .expect("set_accounts should succeed");
 
         // Read them back
         let mut readback = accounts.clone();
-        executor.read_accounts(&mut readback).expect("read_accounts should succeed");
+        executor
+            .read_accounts(&mut readback)
+            .expect("read_accounts should succeed");
 
         assert_eq!(readback[0].lamports, 5_000_000_000);
         assert_eq!(readback[0].data, b"hello smoke test");
@@ -56,28 +58,23 @@ mod smoke_tests {
     // ============================================================
     #[test]
     fn smoke_system_transfer() {
-        let mut executor = LiteSvmExecutor::new(
-            &system_program::ID.to_string(),
-            &[],
-        )
-        .expect("Executor should init");
+        let mut executor = LiteSvmExecutor::new(&system_program::ID.to_string(), &[])
+            .expect("Executor should init");
 
         let payer = executor.payer_pubkey();
         let receiver = Pubkey::new_unique();
 
         // Set up receiver account with 0 lamports
-        let accounts = vec![
-            FuzzAccount {
-                key: receiver.to_string(),
-                data: vec![0u8; 32],
-                owner: system_program::ID.to_string(),
-                lamports: 0,
-                rent_epoch: u64::MAX,
-                is_writable: true,
-                is_signer: false,
-                seeds: None,
-            },
-        ];
+        let accounts = vec![FuzzAccount {
+            key: receiver.to_string(),
+            data: vec![0u8; 32],
+            owner: system_program::ID.to_string(),
+            lamports: 0,
+            rent_epoch: u64::MAX,
+            is_writable: true,
+            is_signer: false,
+            seeds: None,
+        }];
         executor.set_accounts(&accounts).unwrap();
 
         // Build a transfer action where the PAYER sends to receiver.
@@ -125,8 +122,10 @@ mod smoke_tests {
         match &result {
             Ok(results) => {
                 for r in results {
-                    println!("  [{}] success={} cu={} error={:?} logs={:?}",
-                        ix_name, r.success, r.compute_units, r.error, r.logs);
+                    println!(
+                        "  [{}] success={} cu={} error={:?} logs={:?}",
+                        ix_name, r.success, r.compute_units, r.error, r.logs
+                    );
                 }
             }
             Err(e) => {
@@ -136,7 +135,8 @@ mod smoke_tests {
 
         // Read back accounts — verify the executor round-trip works
         executor.read_accounts(&mut working).unwrap();
-        let receiver_after = working.iter()
+        let receiver_after = working
+            .iter()
             .find(|a| a.key == receiver.to_string())
             .unwrap();
         println!("  Receiver lamports after: {}", receiver_after.lamports);
@@ -144,7 +144,10 @@ mod smoke_tests {
         // The transfer may fail due to account schema mismatch in the fuzz
         // abstraction layer, but the key assertion is: we reached LiteSVM.
         // The executor is NOT a placeholder.
-        assert!(result.is_ok(), "execute_sequence should return Ok (even on tx failure)");
+        assert!(
+            result.is_ok(),
+            "execute_sequence should return Ok (even on tx failure)"
+        );
     }
 
     // ============================================================
@@ -152,11 +155,8 @@ mod smoke_tests {
     // ============================================================
     #[test]
     fn smoke_empty_sequence() {
-        let mut executor = LiteSvmExecutor::new(
-            &system_program::ID.to_string(),
-            &[],
-        )
-        .expect("Executor should init");
+        let mut executor = LiteSvmExecutor::new(&system_program::ID.to_string(), &[])
+            .expect("Executor should init");
 
         let mut accounts = vec![];
         let result = executor.execute_sequence(&[], &mut accounts);
@@ -186,7 +186,8 @@ mod smoke_tests {
 
         let mut fuzzer = Fuzzer::new(system_program::ID.to_string());
         fuzzer.rng = Box::new(SmallRng::seed_from_u64(42));
-        fuzzer.deploy_program(vec![])  // system program is built-in
+        fuzzer
+            .deploy_program(vec![]) // system program is built-in
             .expect("Should deploy system program");
 
         // Set up 5 accounts with default values
@@ -204,8 +205,10 @@ mod smoke_tests {
         // Run one round — this hits the REAL LiteSVM executor
         let result = fuzzer.run_one_round();
 
-        println!("Round {}: success={} crash={} error={:?}",
-            result.round, result.execution_success, result.is_crash, result.execution_error);
+        println!(
+            "Round {}: success={} crash={} error={:?}",
+            result.round, result.execution_success, result.is_crash, result.execution_error
+        );
 
         // Even if it fails (random accounts + random ix data won't form valid transfers),
         // the key assertion is: we got HERE without placeholder code.

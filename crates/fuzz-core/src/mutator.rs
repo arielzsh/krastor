@@ -8,8 +8,8 @@
 //! - `swap_signer` → signer confusion (missing signer check)
 //! - `mutate_seeds` → PDA derivation bypass (missing seed validation)
 
-use rand::Rng;
 use crate::FuzzAccount;
+use rand::Rng;
 
 /// Configuration for mutation probabilities.
 /// Each probability is in the range [0.0, 1.0].
@@ -44,7 +44,11 @@ impl Default for MutationConfig {
 
 /// Apply Solana-aware directed mutations to a set of accounts.
 /// Returns the number of mutations actually applied.
-pub fn mutate_accounts(accounts: &mut [FuzzAccount], config: &MutationConfig, rng: &mut impl Rng) -> usize {
+pub fn mutate_accounts(
+    accounts: &mut [FuzzAccount],
+    config: &MutationConfig,
+    rng: &mut impl Rng,
+) -> usize {
     let mut mutation_count = 0;
     for account in accounts.iter_mut() {
         // Only mutate writable accounts (immutable accounts shouldn't change)
@@ -185,7 +189,14 @@ mod tests {
     #[test]
     fn test_mutate_accounts_returns_count() {
         let mut accounts = vec![FuzzAccount::default(); 10];
-        let config = MutationConfig { flip_data: 1.0, replace_owner: 0.0, zero_lamports: 0.0, clear_data: 0.0, swap_signer: 0.0, mutate_seeds: 0.0 };
+        let config = MutationConfig {
+            flip_data: 1.0,
+            replace_owner: 0.0,
+            zero_lamports: 0.0,
+            clear_data: 0.0,
+            swap_signer: 0.0,
+            mutate_seeds: 0.0,
+        };
         let count = mutate_accounts(&mut accounts, &config, &mut thread_rng());
         assert!(count > 0);
     }
