@@ -188,7 +188,7 @@ pub mod meme_coin {
                 anchor_spl::token::Transfer {
                     from: ctx.accounts.pool_token_account.to_account_info(),
                     to: ctx.accounts.user_token_account.to_account_info(),
-                    authority: ctx.accounts.pool.to_account_info(),
+                    authority: pool.to_account_info(),
                 },
                 &[&[b"pool", mint_bytes.as_ref(), &[bump]]],
             ),
@@ -356,7 +356,7 @@ pub mod meme_coin {
                 anchor_spl::token::MintTo {
                     mint: ctx.accounts.lp_mint.to_account_info(),
                     to: ctx.accounts.lp_token_account.to_account_info(),
-                    authority: ctx.accounts.pool.to_account_info(),
+                    authority: pool.to_account_info(),
                 },
                 &[&[b"pool", mint_bytes.as_ref(), &[bump]]],
             ),
@@ -421,7 +421,7 @@ pub mod meme_coin {
                 anchor_spl::token::Transfer {
                     from: ctx.accounts.pool_token_account.to_account_info(),
                     to: ctx.accounts.user_token_account.to_account_info(),
-                    authority: ctx.accounts.pool.to_account_info(),
+                    authority: pool.to_account_info(),
                 },
                 &[&[b"pool", mint_bytes.as_ref(), &[bump]]],
             ),
