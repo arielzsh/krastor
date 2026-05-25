@@ -1,0 +1,24 @@
+# ⚠️  DISCLAIMER — NOT FOR PRODUCTION USE
+#
+# This is a DEMONSTRATION program with INTENTIONAL BUGS
+# designed for Krastor fuzzer validation.
+#
+# DO NOT deploy this to mainnet. DO NOT use it for real assets.
+# The bugs included here WILL result in loss of funds.
+
+[package]
+name = "meme-coin"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "🦭 Demo Solana Meme Coin with intentional bugs for Krastor fuzzer"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "meme_coin"
+
+# Standalone — excluded from parent workspace for cargo-build-sbf
+[workspace]
+
+[dependencies]
+anchor-lang = "0.30"
