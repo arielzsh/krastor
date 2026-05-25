@@ -47,7 +47,8 @@
 
 use anchor_lang::prelude::*;
 
-declare_id!("MemeCoin1111111111111111111111111111111111");
+// Program ID: 8MEMEcoiN... (meme coin demo)
+declare_id!("8MEMEcoiN11111111111111111111111111111111");
 
 // ============================================================
 // Constants
