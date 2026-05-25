@@ -45,7 +45,8 @@ pub mod math;
 pub mod instructions;
 
 // Program ID placeholder — use `solana-keygen new` for production
-anchor_lang::solana_program::declare_id!("11111111111111111111111111111111");
+pub const ID: anchor_lang::solana_program::pubkey::Pubkey =
+    anchor_lang::solana_program::pubkey::Pubkey::new_from_array([0u8; 32]);
 
 #[program]
 pub mod stock {
