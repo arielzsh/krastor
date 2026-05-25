@@ -1,0 +1,16 @@
+[package]
+name = "vulnerable"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Example Anchor contract with known vulnerabilities for Krastor fuzzer"
+
+# Standalone — excluded from parent workspace for cargo-build-sbf
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "vulnerable"
+
+[dependencies]
+anchor-lang = "0.30"

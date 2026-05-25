@@ -1,0 +1,8 @@
+/target
+**/target
+Cargo.lock.bak
+Cargo.toml.bak
+Cargo.toml.orig
+*.swp
+*.swo
+.DS_Store

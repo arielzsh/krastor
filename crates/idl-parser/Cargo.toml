@@ -1,0 +1,13 @@
+[package]
+name = "krastor-idl-parser"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Anchor IDL JSON parser + Rust fuzz harness code generator"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+# UNCERTAINTY: anchor-lang version. The IDL format differs between Anchor 0.29 and 0.30+ (v1).
+# This crate supports both v0.x and v1.0 IDL JSON formats.

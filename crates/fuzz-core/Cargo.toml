@@ -1,0 +1,30 @@
+[package]
+name = "krastor-fuzz-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Core fuzzing engine for Solana programs — random sequences, account mutators, invariants, crash tracking"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+rand = "0.8"
+hex = "0.4"
+# UNCERTAINTY: LiteSVM version — actual version depends on Solana edition.
+# The cargo dependency may need to change to match Solana version.
+litesvm = "0.7"
+solana-pubkey = "2.4"
+solana-instruction = "2.3"
+solana-message = "2.4"
+solana-transaction = "2.2"
+solana-keypair = "2.2"
+solana-signer = "2.2"
+solana-account = "2.2"
+# base64 for encoding arbitrary account data
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+solana-sdk-ids = "2.2"
+solana-pubkey = "2.4"

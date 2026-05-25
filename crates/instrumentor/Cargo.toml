@@ -1,0 +1,18 @@
+[package]
+name = "krastor-instrumentor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "SBF ELF disassembler + static instrumentation + coverage bitmap — OPTIONAL module"
+
+[dependencies]
+serde.workspace = true
+anyhow.workspace = true
+# UNCERTAINTY: goblin 0.8 is the current version for ELF parsing.
+# Verify against actual crate version for SBF ELF compatibility.
+goblin = "0.8"
+# goblin = { version = "0.8", default-features = false, features = ["elf32"] }
+#
+# UNCERTAINTY: the `object` crate may also work for ELF parsing and is
+# maintained more actively. The correct choice depends on SBF ELF specifics:
+# object = "0.36"

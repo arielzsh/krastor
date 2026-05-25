@@ -1,0 +1,108 @@
+# Krastor v0.1 — 项目启动日志
+
+> arielzsh / shipkit · 2026-05-23
+
+---
+
+## 项目概述
+
+Krastor 是 Ackee Blockchain 的 Trident 框架的再生，一个面向 Solana 程序的覆盖率引导 Fuzz。
+
+### 核心架构
+
+```
+krastor/
+├── crates/
+│   ├── fuzz-core/        ✅ 核心引擎：随机序列 + 账户突变 + LiteSVM + 不变量
+│   ├── idl-parser/       ✅ Anchor IDL JSON 解析 + harness 代码生成
+│   ├── instrumentor/     ✅ SBF 字节码静态插桩 + 覆盖位图（可选模块）
+│   ├── cli/              ✅ cargo-krastor CLI
+│   └── report/           ✅ 覆盖率 HTML 报告 + crash JSON 持久化
+└── examples/
+    └── vulnerable/       ✅ 含 3 个已知漏洞的 Anchor 合约
+```
+
+### 三个核心优势
+
+1. **覆盖率引导** — 不是随机撞大运，是系统性逼近未覆盖分支
+2. **跨指令序列编排** — 自动尝试任意长度、顺序的组合（闪电贷模式）
+3. **Solana 账户感知** — owner 替换、lamports 归零、data 清空等定向攻击
+
+### 三个劣势与对策
+
+| 劣势 | 对策 |
+|------|------|
+| SBF 插桩脆弱 | 插桩层独立 crate，降级为可选模块 |
+| 外部依赖长 | 只用 LiteSVM（零外部进程） |
+| 缺少精简 | 内置二分+贪心 Shrinking |
+
+---
+
+## v0.1 检查清单
+
+### fuzz-core ✅
+- [x] FuzzAccount 结构体（key, data, owner, lamports）
+- [x] Fuzzer + random_action() + run_one_round()
+- [x] 6 种账户突变器，概率可配
+- [x] 不变量运行时 + 3 个内置模板
+- [x] LiteSVM 执行封装（带 UNCERTAINTY 注释）
+- [x] Crash 序列 Shrinking + JSON 序列化
+- [ ] 需要 LiteSVM crate 实际连接验证执行路径
+
+### idl-parser ✅
+- [x] Anchor IDL v0.x + v1.0 解析
+- [x] Harness 代码生成（FuzzAccounts + dispatch + invariants）
+- [x] krastor.toml 骨架生成
+- [ ] 需要真实 Anchor IDL JSON 文件验证解析
+
+### instrumentor ✅
+- [x] SBF 指令解码器 + 编码回写
+- [x] 14 种分支类型识别
+- [x] 分支目标收集
+- [x] 覆盖率探针 stub 生成
+- [x] ELF .text/.bss 段解析
+- [ ] SBF opcode 编码需对照官方文档验证（标 UNCERTAINTY/TODO: VERIFY）
+- [ ] 需要真实 SBF ELF 二进制验证解析
+
+### cli ✅
+- [x] `krastor init` — IDL 读取 + harness + toml 生成
+- [x] `krastor fuzz run --iterations N`
+- [x] `krastor fuzz repro crash.json`
+- [x] `krastor fuzz coverage`
+- [ ] 需要 LiteSVM 依赖解析才能完整编译
+
+### report ✅
+- [x] 自包含 HTML 报告（内嵌 CSS，覆盖率热力图）
+- [x] GitHub Actions CI 模板
+- [x] Crash JSON 持久化
+- [ ] chrono crate 需加入 Cargo.toml dependencies
+
+### examples/vulnerable ✅
+- [x] 算术溢出（deposit unchecked加法）
+- [x] 授权绕过（withdraw 无 owner 校验）
+- [x] 状态不一致（flash_loan borrow 计数器时序错误）
+- [ ] 需要 Anchor CLI + Solana CLI 部署验证
+
+---
+
+## 依赖状态
+
+| 依赖 | 状态 | 说明 |
+|------|------|------|
+| LiteSVM 0.7 | ⚠️ 未安装 | 需要 `cargo` 能联网拉取 |
+| Anchor 0.30.1 | ⚠️ 未安装 | 示例合约需要 |
+| goblin 0.8 | ⚠️ 未安装 | instrumentor 需要 |
+| rand 0.8 | ✅ 内置 | fuzz-core 使用 |
+
+---
+
+## 网络工具
+
+- GitHub proxy: ghproxy.com, gh-proxy.com（已测试可用）
+- Cargo mirror: rsproxy.cn（非 git index 路径有误，需更正）
+- Cargo sparse: sparse+https://index.crates.io/（可访问但限速）
+- Rust mirror: rsproxy.cn（rustup 用）
+
+---
+
+*Generated: 2026-05-23 · arielzsh/shipkit*
