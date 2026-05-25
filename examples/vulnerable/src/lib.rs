@@ -18,7 +18,9 @@
 
 use anchor_lang::prelude::*;
 
-declare_id!("VulnProg111111111111111111111111111111111111");
+// Program ID: system program (placeholder for demo)
+pub const ID: anchor_lang::solana_program::pubkey::Pubkey =
+    anchor_lang::solana_program::pubkey::Pubkey::default();
 
 #[program]
 pub mod vulnerable {

@@ -47,9 +47,9 @@
 
 use anchor_lang::prelude::*;
 
-// Program ID: MemeCoin (demo — not for production)
+// Program ID: system program (placeholder for demo)
 pub const ID: anchor_lang::solana_program::pubkey::Pubkey =
-    anchor_lang::solana_program::pubkey!("BrWY4UaCjq6dsZxK4KapSR2zCgKYtvLCmHGhBQJgDBVc");
+    anchor_lang::solana_program::pubkey::Pubkey::default();
 
 // ============================================================
 // Constants
