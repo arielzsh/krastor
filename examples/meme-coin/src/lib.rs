@@ -76,6 +76,7 @@ pub mod meme_coin {
 
         // Set up pool state
         pool.creator = creator.key();
+        pool.mint = ctx.accounts.mint.key();
         pool.sol_reserve = amount;
         pool.token_reserve = amount; // 1:1 initial ratio
         pool.lp_supply = 0;
@@ -103,7 +104,8 @@ pub mod meme_coin {
             &ctx.accounts.token_program,
             &ctx.accounts.mint,
             &ctx.accounts.creator_token_account,
-            &ctx.accounts.creator,
+            &creator.to_account_info(),
+            &[],
             amount,
         )?;
 
@@ -176,11 +178,16 @@ pub mod meme_coin {
         )?;
 
         // Transfer tokens from pool to buyer
-        token_transfer(
-            &ctx.accounts.token_program,
-            &ctx.accounts.pool_token_account,
-            &ctx.accounts.user_token_account,
-            &ctx.accounts.pool,
+        anchor_spl::token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                anchor_spl::token::Transfer {
+                    from: ctx.accounts.pool_token_account.to_account_info(),
+                    to: ctx.accounts.user_token_account.to_account_info(),
+                    authority: ctx.accounts.pool.to_account_info(),
+                },
+                &[&[b"pool", pool.mint.as_ref(), &[pool.bump]]],
+            ),
             token_out,
         )?;
 
@@ -239,11 +246,16 @@ pub mod meme_coin {
         require!(sol_out > 0, MemeCoinError::InsufficientLiquidity);
 
         // Transfer tokens from seller to pool
-        token_transfer(
-            &ctx.accounts.token_program,
-            &ctx.accounts.user_token_account,
-            &ctx.accounts.pool_token_account,
-            &ctx.accounts.user,
+        anchor_spl::token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                anchor_spl::token::Transfer {
+                    from: ctx.accounts.user_token_account.to_account_info(),
+                    to: ctx.accounts.pool_token_account.to_account_info(),
+                    authority: ctx.accounts.user.to_account_info(),
+                },
+                &[],
+            ),
             token_in,
         )?;
 
@@ -316,20 +328,30 @@ pub mod meme_coin {
         )?;
 
         // Transfer tokens from LP to pool
-        token_transfer(
-            &ctx.accounts.token_program,
-            &ctx.accounts.user_token_account,
-            &ctx.accounts.pool_token_account,
-            &ctx.accounts.user,
+        anchor_spl::token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                anchor_spl::token::Transfer {
+                    from: ctx.accounts.user_token_account.to_account_info(),
+                    to: ctx.accounts.pool_token_account.to_account_info(),
+                    authority: ctx.accounts.user.to_account_info(),
+                },
+                &[],
+            ),
             token_in,
         )?;
 
         // Mint LP tokens — but the ratio might be wrong (BUG 4)
-        token_mint_to(
-            &ctx.accounts.token_program,
-            &ctx.accounts.lp_mint,
-            &ctx.accounts.lp_token_account,
-            &ctx.accounts.pool,
+        anchor_spl::token::mint_to(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                anchor_spl::token::MintTo {
+                    mint: ctx.accounts.lp_mint.to_account_info(),
+                    to: ctx.accounts.lp_token_account.to_account_info(),
+                    authority: ctx.accounts.pool.to_account_info(),
+                },
+                &[&[b"pool", pool.mint.as_ref(), &[pool.bump]]],
+            ),
             lp_to_mint,
         )?;
 
@@ -363,11 +385,16 @@ pub mod meme_coin {
             .ok_or(MemeCoinError::Overflow)?) as u64;
 
         // Burn LP tokens
-        token_burn(
-            &ctx.accounts.token_program,
-            &ctx.accounts.lp_token_account,
-            &ctx.accounts.lp_mint,
-            &ctx.accounts.user,
+        anchor_spl::token::burn(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                anchor_spl::token::Burn {
+                    mint: ctx.accounts.lp_mint.to_account_info(),
+                    from: ctx.accounts.lp_token_account.to_account_info(),
+                    authority: ctx.accounts.user.to_account_info(),
+                },
+                &[],
+            ),
             lp_amount,
         )?;
 
@@ -376,11 +403,16 @@ pub mod meme_coin {
         **ctx.accounts.user.to_account_info().try_borrow_mut_lamports()? += sol_share;
 
         // Transfer tokens back to LP
-        token_transfer(
-            &ctx.accounts.token_program,
-            &ctx.accounts.pool_token_account,
-            &ctx.accounts.user_token_account,
-            &ctx.accounts.pool,
+        anchor_spl::token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                anchor_spl::token::Transfer {
+                    from: ctx.accounts.pool_token_account.to_account_info(),
+                    to: ctx.accounts.user_token_account.to_account_info(),
+                    authority: ctx.accounts.pool.to_account_info(),
+                },
+                &[&[b"pool", pool.mint.as_ref(), &[pool.bump]]],
+            ),
             token_share,
         )?;
 
@@ -399,11 +431,16 @@ pub mod meme_coin {
     pub fn evil_mint(ctx: Context<EvilMint>, amount: u64) -> Result<()> {
         // Note: There's no authorization check here because the mint authority
         // is still set to the creator. This instruction just works.
-        token_mint_to(
-            &ctx.accounts.token_program,
-            &ctx.accounts.mint,
-            &ctx.accounts.destination,
-            &ctx.accounts.authority,
+        anchor_spl::token::mint_to(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                anchor_spl::token::MintTo {
+                    mint: ctx.accounts.mint.to_account_info(),
+                    to: ctx.accounts.destination.to_account_info(),
+                    authority: ctx.accounts.authority.to_account_info(),
+                },
+                &[],
+            ),
             amount,
         )?;
 
@@ -577,10 +614,13 @@ pub struct SetPaused<'info> {
 pub struct Pool {
     /// Creator's pubkey (also the mint authority — BUG 1!)
     pub creator: Pubkey,
+    /// The token mint address
+    pub mint: Pubkey,
     /// SOL reserve in lamports
     pub sol_reserve: u64,
     /// Token reserve (in token's smallest unit)
     pub token_reserve: u64,
+    /// Total LP token supply
     /// Total LP token supply
     pub lp_supply: u64,
     /// Total fees collected
@@ -592,7 +632,7 @@ pub struct Pool {
 }
 
 impl Pool {
-    pub const LEN: usize = 8 + 32 + 8 + 8 + 8 + 8 + 1 + 1;
+    pub const LEN: usize = 8 + 32 + 32 + 8 + 8 + 8 + 8 + 1 + 1;
 }
 
 // ============================================================
@@ -647,62 +687,72 @@ pub enum MemeCoinError {
 // SPL Token CPI Helpers
 // ============================================================
 
+#[allow(unused)]
 fn token_mint_to<'info>(
     token_program: &Program<'info, anchor_spl::token::Token>,
     mint: &Account<'info, anchor_spl::token::Mint>,
     destination: &Account<'info, anchor_spl::token::TokenAccount>,
-    authority: &Signer<'info>,
+    authority: &AccountInfo<'info>,
+    seeds: &[&[&[u8]]],
     amount: u64,
 ) -> Result<()> {
-    anchor_spl::token::mint_to(
-        CpiContext::new(
-            token_program.to_account_info(),
-            anchor_spl::token::MintTo {
-                mint: mint.to_account_info(),
-                to: destination.to_account_info(),
-                authority: authority.to_account_info(),
-            },
-        ),
-        amount,
-    )
+    let accounts = anchor_spl::token::MintTo {
+        mint: mint.to_account_info(),
+        to: destination.to_account_info(),
+        authority: authority.clone(),
+    };
+    if seeds.is_empty() {
+        anchor_spl::token::mint_to(CpiContext::new(token_program.to_account_info(), accounts), amount)
+    } else {
+        anchor_spl::token::mint_to(
+            CpiContext::new_with_signer(token_program.to_account_info(), accounts, seeds),
+            amount,
+        )
+    }
 }
 
 fn token_transfer<'info>(
     token_program: &Program<'info, anchor_spl::token::Token>,
     from: &Account<'info, anchor_spl::token::TokenAccount>,
     to: &Account<'info, anchor_spl::token::TokenAccount>,
-    authority: &Signer<'info>,
+    authority: &AccountInfo<'info>,
+    seeds: &[&[&[u8]]],
     amount: u64,
 ) -> Result<()> {
-    anchor_spl::token::transfer(
-        CpiContext::new(
-            token_program.to_account_info(),
-            anchor_spl::token::Transfer {
-                from: from.to_account_info(),
-                to: to.to_account_info(),
-                authority: authority.to_account_info(),
-            },
-        ),
-        amount,
-    )
+    let accounts = anchor_spl::token::Transfer {
+        from: from.to_account_info(),
+        to: to.to_account_info(),
+        authority: authority.clone(),
+    };
+    if seeds.is_empty() {
+        anchor_spl::token::transfer(CpiContext::new(token_program.to_account_info(), accounts), amount)
+    } else {
+        anchor_spl::token::transfer(
+            CpiContext::new_with_signer(token_program.to_account_info(), accounts, seeds),
+            amount,
+        )
+    }
 }
 
 fn token_burn<'info>(
     token_program: &Program<'info, anchor_spl::token::Token>,
     from: &Account<'info, anchor_spl::token::TokenAccount>,
     mint: &Account<'info, anchor_spl::token::Mint>,
-    authority: &Signer<'info>,
+    authority: &AccountInfo<'info>,
+    seeds: &[&[&[u8]]],
     amount: u64,
 ) -> Result<()> {
-    anchor_spl::token::burn(
-        CpiContext::new(
-            token_program.to_account_info(),
-            anchor_spl::token::Burn {
-                mint: mint.to_account_info(),
-                from: from.to_account_info(),
-                authority: authority.to_account_info(),
-            },
-        ),
-        amount,
-    )
+    let accounts = anchor_spl::token::Burn {
+        mint: mint.to_account_info(),
+        from: from.to_account_info(),
+        authority: authority.clone(),
+    };
+    if seeds.is_empty() {
+        anchor_spl::token::burn(CpiContext::new(token_program.to_account_info(), accounts), amount)
+    } else {
+        anchor_spl::token::burn(
+            CpiContext::new_with_signer(token_program.to_account_info(), accounts, seeds),
+            amount,
+        )
+    }
 }
