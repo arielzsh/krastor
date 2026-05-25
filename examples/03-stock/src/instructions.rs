@@ -169,6 +169,7 @@ pub fn split_handler(ctx: Context<SplitCtx>, ratio: u64) -> Result<()> {
 // ============================================================
 
 #[derive(Accounts)]
+#[instruction(slot: u64)]
 pub struct SnapshotCtx<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
@@ -180,7 +181,7 @@ pub struct SnapshotCtx<'info> {
         init,
         payer = admin,
         space = DividendSnapshot::LEN,
-        seeds = [b"dividend", &Clock::get()?.slot.to_le_bytes()],
+        seeds = [b"dividend", &slot.to_le_bytes()],
         bump
     )]
     pub snapshot: Account<'info, DividendSnapshot>,
@@ -192,13 +193,12 @@ pub struct SnapshotCtx<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn snapshot_handler(ctx: Context<SnapshotCtx>, dividend_per_share: u64) -> Result<()> {
+pub fn snapshot_handler(ctx: Context<SnapshotCtx>, slot: u64, dividend_per_share: u64) -> Result<()> {
     require!(ctx.accounts.admin.key() == ctx.accounts.global_config.admin, StockError::Unauthorized);
 
-    let clock = Clock::get()?;
     let snapshot = &mut ctx.accounts.snapshot;
 
-    snapshot.slot = clock.slot;
+    snapshot.slot = slot;
     snapshot.total_supply = 0; // In production: read from Token2022 mint supply
     snapshot.dividend_per_share = dividend_per_share;
     snapshot.pool_lamports = ctx.accounts.usdc_pool.lamports();

@@ -74,8 +74,8 @@ pub mod stock {
     }
 
     /// Phase 4: Take dividend snapshot at current slot
-    pub fn snapshot_dividend(ctx: Context<SnapshotCtx>, dividend_per_share: u64) -> Result<()> {
-        instructions::snapshot_handler(ctx, dividend_per_share)
+    pub fn snapshot_dividend(ctx: Context<SnapshotCtx>, slot: u64, dividend_per_share: u64) -> Result<()> {
+        instructions::snapshot_handler(ctx, slot, dividend_per_share)
     }
 
     /// Phase 4: Claim dividend proportional to your snapshot balance
