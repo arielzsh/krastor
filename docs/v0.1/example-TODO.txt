@@ -1,0 +1,227 @@
+# Krastor Example Program TODO
+# Programs to build as fuzzing targets for Krastor validation
+# Each should contain intentional bugs that Krastor can catch
+
+---
+
+## 1. Solana NFT (类似 CrazyMonkey)
+
+**类型**: NFT Collection / Marketplace
+**复杂度**: 中等
+
+### 功能
+- Mint NFT with metadata (name, URI, attributes)
+- Transfer NFT between owners
+- List/Delist on marketplace
+- Buy/Sell with royalties
+
+### 可注入的 Bug
+- [ ] Mint 没有检查 supply cap → 无限增发
+- [ ] Transfer 没有检查 owner → 任意转走别人的 NFT
+- [ ] Royalty 计算溢出 (unchecked arithmetic)
+- [ ] Metadata 未验证 → 假 NFT 上架
+- [ ] Marketplace escrow 未正确释放 → 资金锁死
+
+### 参考
+- Metaplex Token Metadata
+- CrazyMonkey (Solana NFT)
+
+---
+
+## 2. Solana Meme Coin
+
+**类型**: Token / Fair Launch
+**复杂度**: 低-中
+
+### 功能
+- Create token (SPL Token)
+- Fair launch pool (deposit SOL → get tokens)
+- Trading with AMM (constant product)
+- Add/Remove liquidity
+- Transfer
+
+### 可注入的 Bug
+- [ ] Token mint authority 未 revoke → 无限铸币
+- [ ] AMM 池比例计算溢出 → 闪电贷攻击
+- [ ] LP token 数量计算错误 → 流动性提供者亏钱
+- [ ] 滑点保护缺失 → 三明治攻击
+- [ ] Transfer fee 计算绕过
+
+### 参考
+- Pump.fun 机制
+- Orca / Raydium AMM
+
+---
+
+## 3. Solana GameFi
+
+**类型**: Play-to-Earn / On-chain Game
+**复杂度**: 高
+
+### 功能
+- Player registration (create game account)
+- Earn tokens through gameplay (claim reward)
+- Upgrade equipment/character (spend tokens)
+- Battle/PvP (wager match)
+- Leaderboard + seasonal rewards
+- Staking game assets
+
+### 可注入的 Bug
+- [ ] Claim reward 未验证游戏状态 → 刷分作弊
+- [ ] Equipment upgrade 溢出 → 属性归零或溢出
+- [ ] PvP 押注未锁定 → 双重下注
+- [ ] Staking 奖励计算时间操纵 → 提前领取
+- [ ] Leaderboard 排名可通过 Clock sysvar 操纵
+- [ ] 角色转移时未清除旧状态 → 数据残留攻击
+
+### 参考
+- Star Atlas
+- Aurory
+- Genopets
+
+---
+
+## 4. Solana RWA (Real World Assets)
+
+**类型**: Tokenized Real-World Assets
+**复杂度**: 高
+
+### 功能
+- Asset issuance (create RWA token backed by off-chain asset)
+- KYC/Accreditation check (whitelist)
+- Fractional ownership (split asset into shares)
+- Dividend/Yield distribution
+- Redemption (burn tokens → claim underlying)
+- Compliance module (transfer restrictions, blacklist)
+
+### 可注入的 Bug
+- [ ] 分红计算精度丢失 → 用户损失
+- [ ] 白名单绕过 → 未认证用户购买
+- [ ] 赎回时 token burn 与资金转移非原子化 → 双花
+- [ ] 部分所有权投票权重计算错误
+- [ ] Compliance 模块可被绕过（owner check 缺失）
+- [ ] Oracle 价格操纵 → 以错误价格赎回
+- [ ] 利息复利计算溢出
+
+### 参考
+- Ondo Finance
+- Parcl
+- Homebase
+
+---
+
+## 5. Solana Stock (拆分现实股票)
+
+**类型**: Synthetic Stock / Tokenized Equities
+**复杂度**: 很高
+
+### 功能
+- Stock token issuance (1 stock = N tokens, fractional)
+- Real-time price oracle (Pyth/Chainlink)
+- Trading (AMM or orderbook)
+- Dividend distribution (from real stock dividends)
+- Corporate actions (stock split, merge)
+- Short selling with borrow/lend pool
+- Margin trading with leverage
+
+### 可注入的 Bug
+- [ ] Stock split 后 token 数量计算错误 → 持有者亏钱
+- [ ] Dividend 快照时间与分发时间不同步 → 套利
+- [ ] Short sell 借出池未正确锁定抵押品
+- [ ] 杠杆清算价格计算错误 → 坏账
+- [ ] Oracle 价格延迟 → 无风险套利
+- [ ] Margin call 未正确处理小数精度
+- [ ] 企业行为 (corporate action) 投票权重错误
+
+### 参考
+- Synthetify
+- Mango Markets (before hack)
+- Drift Protocol
+
+---
+
+## 6. Solana 极度复杂金融衍生品系统
+
+**类型**: DeFi 3.0 / Structured Products / On-chain Derivatives
+**复杂度**: 极高 🔥
+
+### 架构层级
+
+#### L1: 账户模型 (Account Model)
+- 用户独立保证金账户 (User Margin Account) — Sealevel 并行
+- 按市场分账 (Per-Market Account) — 避免全局状态锁
+- Zero-Copy 序列化 — 避免 CU 超限
+
+#### L2: 金融工程计算层 (Computational Layer)
+- 链下计算 + 链上验证 (Hybrid Architecture)
+  - 链下: GPU/FPGA 跑 Black-Scholes、计算 IV/Greeks
+  - 链上: 分片线性函数 / Lookup Table 近似验证
+- 定点数数学库 (Fixed-point Math 64.64/128.128)
+
+#### L3: 风险控制与清算引擎 (Risk & Liquidation)
+- 多维风险矩阵 (Portfolio Margin)
+  - 实时评估 Delta/Gamma/Vega 净风险敞口
+- Jito-Solana MEV 清算捆绑
+  - 预言机喂价 + 清算触发 + 资产转移 → 原子化 Bundle
+  - 400ms 内 100% 执行
+
+#### L4: 预言机 (Oracle)
+- Pyth Network 低延迟喂价 (每 400ms)
+- 置信区间 (Confidence Interval) → 自动拉大价差/提高保证金
+- 防止闪电贷攻击和跨市场价格操纵
+
+#### L5: 流动性层 (Liquidity & Vaults)
+- 分级资金池 (Tranche-based)
+  - Senior Tranche: 低风险低收益
+  - Junior Tranche: 高风险高收益
+- 自动资产重组 (Rebalancing)
+
+### 业务场景
+| 场景 | 具体形式 | 为什么复杂 |
+|------|---------|-----------|
+| 机构对冲 | RWA 利率掉期 (IRS) | 利息累计 + 现金流拆解 |
+| 衍生品 DEX | 全仓组合保证金永续 | 多资产 VaR 实时计算 |
+| 资管协议 | 奇异期权保险库 (DOVs) | Delta 动态对冲 + 敲入敲出 |
+
+### 可注入的 Bug 🔥
+- [ ] Zero-Copy 数据竞态 (Sealevel 并行写入同一账户)
+- [ ] 定点数除法精度丢失 (复利计算累积误差)
+- [ ] 清算时抵押品估值与强平执行之间存在时间窗口
+- [ ] 分级资金池 Senior/Junior 比例计算溢出
+- [ ] Oracle 置信区间未正确处理 → 虚假价格通过
+- [ ] 自动对冲机器人被抢先交易 (MEV 攻击)
+- [ ] 资金费率计算中符号错误 (多头付费变空头付费)
+- [ ] 行权时内在价值 (Intrinsic Value) 计算溢出
+- [ ] 跨市场保证金组合 VaR 协方差矩阵未更新
+- [ ] 链下→链上 Hybrid 验证被绕过 (提交虚假计算结果)
+
+### 设计成败关键
+> "计算向链下借算力，安全与结算向链上要共识"
+> 极致的性能 = 极高的开发门槛
+> 需要: 华尔街量化背景 + Rust Solana 架构师
+
+### 参考
+- Zeta Markets
+- Drift Protocol
+- Cega
+- Ribbon Finance (DOVs)
+- Jito-Solana MEV
+
+---
+
+## 优先级排序
+
+```
+P0 (本周)  → Meme Coin (简单，验证完整流程)
+           → NFT (中等，验证 owner 绕过检测)
+
+P1 (下周)  → Stock (很高，验证 Oracle + corporate actions)
+           → RWA (高，验证 compliance 绕过)
+
+P2 (远期)  → GameFi (高，验证多状态交互)
+           → 复杂金融衍生品 (极高，终极目标)
+```
+
+---
+
+*Created: 2026-05-25 · arielzsh/shipkit*
