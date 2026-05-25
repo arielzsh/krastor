@@ -136,6 +136,10 @@ pub mod meme_coin {
         require!(!pool.paused, MemeCoinError::PoolPaused);
         require!(sol_in > 0, MemeCoinError::ZeroAmount);
 
+        // Snapshot PDA seeds before mutable borrow
+        let mint_bytes = pool.mint.clone();
+        let bump = pool.bump;
+
         // Calculate fee
         // BUG 5: For sol_in < 333, fee = 0 (333 * 30 / 10000 = 0 due to integer division)
         let fee = sol_in
@@ -186,7 +190,7 @@ pub mod meme_coin {
                     to: ctx.accounts.user_token_account.to_account_info(),
                     authority: ctx.accounts.pool.to_account_info(),
                 },
-                &[&[b"pool", pool.mint.as_ref(), &[pool.bump]]],
+                &[&[b"pool", mint_bytes.as_ref(), &[bump]]],
             ),
             token_out,
         )?;
@@ -295,6 +299,10 @@ pub mod meme_coin {
         require!(!pool.paused, MemeCoinError::PoolPaused);
         require!(sol_in > 0 && token_in > 0, MemeCoinError::ZeroAmount);
 
+        // Snapshot PDA seeds before mutable borrow
+        let mint_bytes = pool.mint.clone();
+        let bump = pool.bump;
+
         // BUG 4: Simplistic LP calculation — doesn't handle imbalanced deposits correctly.
         // If the pool ratio is 2:1 SOL:TOKEN and the user deposits 100:100,
         // they should receive LP tokens based on the MINIMUM of the two ratios.
@@ -350,7 +358,7 @@ pub mod meme_coin {
                     to: ctx.accounts.lp_token_account.to_account_info(),
                     authority: ctx.accounts.pool.to_account_info(),
                 },
-                &[&[b"pool", pool.mint.as_ref(), &[pool.bump]]],
+                &[&[b"pool", mint_bytes.as_ref(), &[bump]]],
             ),
             lp_to_mint,
         )?;
@@ -370,6 +378,10 @@ pub mod meme_coin {
         require!(!pool.paused, MemeCoinError::PoolPaused);
         require!(lp_amount > 0, MemeCoinError::ZeroAmount);
         require!(lp_amount <= pool.lp_supply, MemeCoinError::InsufficientLiquidity);
+
+        // Snapshot PDA seeds before mutable borrow
+        let mint_bytes = pool.mint.clone();
+        let bump = pool.bump;
 
         // Calculate share of reserves
         let sol_share = ((pool.sol_reserve as u128)
@@ -411,7 +423,7 @@ pub mod meme_coin {
                     to: ctx.accounts.user_token_account.to_account_info(),
                     authority: ctx.accounts.pool.to_account_info(),
                 },
-                &[&[b"pool", pool.mint.as_ref(), &[pool.bump]]],
+                &[&[b"pool", mint_bytes.as_ref(), &[bump]]],
             ),
             token_share,
         )?;
