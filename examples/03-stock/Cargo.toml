@@ -1,0 +1,19 @@
+# ⚠️  DISCLAIMER — NOT FOR PRODUCTION USE
+# Demo program with intentional bugs for Krastor fuzzer validation.
+
+[package]
+name = "stock"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "🦭 Solana fractional stock platform — Token 2022 + Transfer Hook + Stock Split + Dividends (demo only)"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "stock"
+
+[workspace]
+
+[dependencies]
+anchor-lang = "0.30"
+anchor-spl = "0.30"

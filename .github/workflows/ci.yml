@@ -112,3 +112,7 @@ jobs:
       - name: Build 01-meme-coin (SBF)
         working-directory: examples/01-meme-coin
         run: cargo build-sbf
+
+      - name: Build 03-stock (SBF)
+        working-directory: examples/03-stock
+        run: cargo build-sbf
