@@ -49,7 +49,7 @@ use anchor_lang::prelude::*;
 
 // Program ID: system program (placeholder for demo)
 pub const ID: anchor_lang::solana_program::pubkey::Pubkey =
-    anchor_lang::solana_program::pubkey::Pubkey::default();
+    anchor_lang::solana_program::pubkey::Pubkey::new_from_array([0u8; 32]);
 
 // ============================================================
 // Constants
