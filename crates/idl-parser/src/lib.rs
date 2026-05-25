@@ -8,7 +8,7 @@
 //! - krastor.toml configuration skeleton
 
 use serde::{Deserialize, Serialize};
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -330,7 +330,7 @@ fn generate_invariant_templates(idl: &Idl, code: &mut String) {
     code.push_str("    fuzzer.invariants.register(\"admin_immutability\", Box::new(invariant_admin_immutability));\n");
     code.push_str("    fuzzer.invariants.register(\"state_machine\", Box::new(invariant_state_machine_paused));\n");
 
-    code.push_str("\n");
+    code.push('\n');
     code.push_str(&format!("    // {} instructions available for random selection\n", idl.instructions.len()));
     for ix in &idl.instructions {
         let disc = ix.discriminator.as_ref()

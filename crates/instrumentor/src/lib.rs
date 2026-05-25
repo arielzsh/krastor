@@ -72,7 +72,7 @@ impl SbfInstruction {
 
     /// Is this a branch instruction?
     pub fn is_branch(&self) -> bool {
-        matches!(self.branch_type(), Some(_))
+        self.branch_type().is_some()
     }
 
     /// Determine the branch type, if any
@@ -166,7 +166,7 @@ pub fn collect_branch_targets(instructions: &[SbfInstruction]) -> HashSet<u64> {
 ///
 /// This implementation models what the stub SHOULD do. Actual generation
 /// requires SBF machine code assembly.
-pub fn generate_probe_stub(edge_id: u32, bitmap_ptr_reg: u8) -> Vec<u8> {
+pub fn generate_probe_stub(_edge_id: u32, _bitmap_ptr_reg: u8) -> Vec<u8> {
     // Placeholder: return 16 bytes of zeros (will be replaced with real SBF asm)
     // TODO: Replace with actual SBF machine code:
     // ```

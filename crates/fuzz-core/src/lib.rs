@@ -122,6 +122,12 @@ pub struct CoverageBitmap {
     pub covered_edges: usize,
 }
 
+impl Default for CoverageBitmap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CoverageBitmap {
     pub fn new() -> Self {
         Self { edges: vec![0u8; 65536], covered_edges: 0 }
@@ -161,7 +167,7 @@ fn random_bytes(rng: &mut impl Rng, len: usize) -> Vec<u8> {
 
 // Simple base58 encode (placeholder — real impl would use bs58 crate)
 pub fn bs58_encode(data: &[u8]) -> String {
-    use std::fmt::Write;
+    
     const ALPHABET: &[u8] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
     let mut result = String::new();
     let mut num = 0u128;

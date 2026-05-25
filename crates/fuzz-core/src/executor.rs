@@ -187,9 +187,6 @@ impl LiteSvmExecutor {
         Ok(results)
     }
 
-    /// Get the latest blockhash (useful for building custom transactions).
-
-
     /// Access the underlying LiteSVM for advanced operations.
     pub fn svm_mut(&mut self) -> &mut LiteSVM {
         &mut self.svm

@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "krastor", version = "0.1.0", about = "Coverage-guided fuzzer for Solana programs")]
@@ -65,7 +65,7 @@ fn cmd_init(anchor_root: &PathBuf, idl_path: Option<PathBuf>) -> anyhow::Result<
         let d = anchor_root.join("target").join("idl");
         if d.is_dir() {
             std::fs::read_dir(&d).ok()?.filter_map(|e| e.ok())
-                .find(|e| e.path().extension().map_or(false, |ext| ext == "json"))
+                .find(|e| e.path().extension().is_some_and(|ext| ext == "json"))
                 .map(|e| e.path())
         } else { None }
     }).ok_or_else(|| anyhow::anyhow!("No IDL found. Build Anchor project first."))?;
@@ -104,7 +104,7 @@ fn cmd_fuzz_run(iterations: u64, _output: Option<PathBuf>, _program: Option<Path
     Ok(())
 }
 
-fn cmd_fuzz_repro(crash_file: &PathBuf) -> anyhow::Result<()> {
+fn cmd_fuzz_repro(crash_file: &Path) -> anyhow::Result<()> {
     let record = krastor_fuzz_core::crash::CrashRecord::load(crash_file)?;
     println!("Crash: {}", record.description);
     println!("  Type: {}, Round: {}", record.crash_type, record.discovered_at_round);

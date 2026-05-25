@@ -33,6 +33,12 @@ pub struct InvariantRegistry {
     pub invariants: Vec<(String, InvariantFn)>,
 }
 
+impl Default for InvariantRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InvariantRegistry {
     pub fn new() -> Self {
         Self { invariants: Vec::new() }
@@ -150,10 +156,10 @@ mod tests {
     fn test_supply_conservation_passes() {
         let initial = make_test_accounts();
         let mut current = initial.clone();
-        current[0].lamports = 90;
-        current[1].lamports = 200; // 10 lost to rent (within tolerance)
+        current[0].lamports = 95;
+        current[1].lamports = 200; // 5 lost to rent (within 1% per account tolerance)
         let result = invariant_supply_conservation(&current, &initial, 0);
-        // 290 vs 300 — 10 lamports loss is within 1% tolerance
+        // 295 vs 300 — 5 lamports loss, tolerance = 2 * 300 / 100 = 6
         assert!(result.is_none());
     }
 

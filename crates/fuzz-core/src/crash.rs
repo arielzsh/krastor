@@ -104,7 +104,7 @@ pub fn shrink(
     // Pass 1: binary deletion
     let mut step = minimal.len();
     while step > 1 {
-        step = (step + 1) / 2;
+        step = step.div_ceil(2);
         if step < minimal.len() {
             let candidate: Vec<FuzzAction> = minimal[step..].to_vec();
             let candidate_seq = FuzzActionSequence {

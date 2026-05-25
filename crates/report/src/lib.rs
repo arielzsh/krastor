@@ -1,7 +1,7 @@
 //! Report generation — Coverage HTML + crash JSON persistence + GitHub Actions CI template.
 //! Generates self-contained HTML with embedded CSS (no external dependencies).
 
-use krastor_fuzz_core::{CoverageBitmap, FuzzActionSequence};
+use krastor_fuzz_core::CoverageBitmap;
 use krastor_fuzz_core::crash::CrashRecord;
 use std::path::Path;
 
@@ -12,7 +12,7 @@ pub fn generate_html_report(
     total_rounds: u64,
     program_name: &str,
 ) -> String {
-    let coverage_pct = if coverage.edges.len() > 0 {
+    let coverage_pct = if !coverage.edges.is_empty() {
         (coverage.covered_edges as f64 / coverage.edges.len() as f64) * 100.0
     } else { 0.0 };
 
@@ -88,7 +88,7 @@ pub fn generate_html_report(
         edges = coverage.covered_edges,
         rounds = total_rounds,
         crash_count = crashes.len(),
-        crash_list = crashes.iter().enumerate().map(|(i, c)| format!(
+        crash_list = crashes.iter().map(|c| format!(
             r#"<div class="crash-item{}"><div class="crash-type">{}</div><div class="crash-desc">{}</div><div class="crash-len">Round {} · {} instr ({} removed)</div></div>"#,
             if matches!(c.crash_type, krastor_fuzz_core::crash::CrashType::InvariantViolation(_)) { " invariant" } else { "" },
             c.crash_type,
@@ -106,7 +106,7 @@ extern crate chrono;
 /// Generate GitHub Actions CI workflow template for continuous fuzzing.
 pub fn generate_github_actions_template(program_name: &str, iterations: u64) -> String {
     format!(
-        r#"name: Krastor Fuzz
+        r#"name: Krastor Fuzz — {program_name}
 
 on:
   push:
