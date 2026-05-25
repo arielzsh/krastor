@@ -1,0 +1,231 @@
+# 03-stock — Micro-Fractional Equity Distribution Platform
+
+> Source: stock.txt specification
+> Status: 📋 Detailed Spec → Implementation
+
+---
+
+## ⚠️  Architecture Overview
+
+```
+[Web2 Stock Market API] → [Oracle/Relayer] → [Solana Token 2022 Mint]
+                                                    │
+                                          (every transfer forced CPI)
+                                                    v
+                                       [Transfer Hook Risk Engine]
+                                         ├── 1. Market hours check
+                                         └── 2. Dynamic stamp tax
+```
+
+---
+
+## 一、Business Workflow (4 Phases)
+
+### Phase 1: Asset Initialization (Genesis)
+
+- [ ] Deploy Token 2022 Mint with multiple extensions:
+  - [ ] `Transfer Hook` extension
+  - [ ] `Metadata Pointer` extension
+- [ ] Write real-world stock metadata on-chain:
+  - [ ] AAPL CUSIP/ISIN code
+  - [ ] Legal total shares outstanding
+  - [ ] Custodian bank vault address
+- [ ] Initialize global config PDA:
+  - [ ] `split_multiplier: u64 = 1`
+  - [ ] `market_status: enum { OPEN, CLOSED, PRE_MARKET }`
+  - [ ] `base_stamp_tax_bps: u64 = 10` (0.1%)
+
+### Phase 2: Daily Trading & Risk Control (Transfer Hook Lifecycle)
+
+- [ ] Implement `execute_transfer_hook` (Token 2022 CPI):
+  - [ ] **Market hours check**: reject transfers when `market_status == CLOSED`
+    - [ ] Error code: `0x1702 (StockMarketClosed)`
+  - [ ] **Velocity tracker**: read `Velocity` account, compute transfer frequency
+    - [ ] Dynamic stamp tax: `0.1% → 5.0%` based on velocity
+    - [ ] Smooth ramp formula: `tax_bps = base + velocity * scaling_factor`
+  - [ ] **Atomic fund split**: 95% to recipient, 5% stamp tax → burn account
+- [ ] Velocity tracking PDA:
+  - [ ] `window_start: i64` (unix timestamp)
+  - [ ] `transfer_count: u64` (within window)
+  - [ ] `window_duration: i64` (e.g., 60 seconds)
+
+### Phase 3: Corporate Actions — Stock Split
+
+- [ ] Implement `trigger_stock_split(ratio: u64)`:
+  - [ ] Admin-only (check `ctx.accounts.authority.key() == global_config.admin`)
+  - [ ] Update `global_config.split_multiplier` from 1 to `ratio`
+  - [ ] **Key demo**: user token balances remain UNCHANGED on-chain
+  - [ ] View function `get_effective_balance(user)` does `balance * split_multiplier`
+- [ ] Demonstrate: 1:5 split → frontend shows 5× balance, chain data unmodified
+
+### Phase 4: Dividend Distribution (Snapshot + Claim)
+
+- [ ] Implement `snapshot_dividend(dividend_per_share: u64)`:
+  - [ ] Lock block height / slot number
+  - [ ] Record all holder "physical balances" (pre-split-multiplier)
+  - [ ] Fund dividend pool PDA with USDC (Simulated)
+- [ ] Implement `claim_dividend(user)`:
+  - [ ] Fixed-point math: `user_share = user_balance * 1_000_000 / total_supply`
+  - [ ] `usdc_payout = user_share * dividend_per_share / 1_000_000`
+  - [ ] Release USDC from dividend pool PDA
+  - [ ] Mark user as "claimed" to prevent double-claim
+
+---
+
+## 二、Web2 API Mock Interface (Relayer/Oracle Service)
+
+### API 1: Stock Market Feed & Status
+
+```
+Endpoint:  GET /api/v1/stock/{ticker}/quote
+Response:
+  {
+    "ticker": "AAPL",
+    "current_price": 175.42,
+    "market_status": "CLOSED",  // OPEN | CLOSED | PRE_MARKET
+    "last_trade_timestamp": 1718956800,
+    "timezone": "America/New_York"
+  }
+```
+
+- [ ] Python relayer polls this endpoint
+- [ ] Writes `market_status` to chain global config on status change
+- [ ] Combined with `Clock` sysvar → "wall street market hours" enforced on-chain
+
+### API 2: Corporate Actions Oracle
+
+```
+Endpoint:  GET /api/v1/corporate-actions/{ticker}
+Response:
+  {
+    "action_id": "CA-2026-0091",
+    "ticker": "TSLA",
+    "action_type": "STOCK_SPLIT",
+    "ratio": "5:1",
+    "effective_date": "2026-06-01"
+  }
+```
+
+- [ ] Relayer detects split → calls `execute_split_multiplier` at effective time
+- [ ] **Showcase**: ultra-low energy (no user iteration), elegant solution
+
+### API 3: Fiat Custody Ledger
+
+```
+Endpoint:  GET /api/v1/custody/vault
+Response:
+  {
+    "custodian_bank": "Demo BNY Mellon",
+    "vault_account_id": "VAULT-9921-USD",
+    "total_backed_shares": 10000,
+    "minted_token_supply": 10000000000
+  }
+```
+
+- [ ] **Proof of Reserve** dashboard:
+  - [ ] Real-time comparison: off-chain shares vs on-chain mint supply
+  - [ ] Demonstrate 1:1 backing — no fractional reserve fraud
+
+---
+
+## 三、Tech Showcase Highlights
+
+### Demo 1: "Time-Travel" Attack Defense
+
+- [ ] Write hacker script:
+  - [ ] Bypass frontend
+  - [ ] Send raw SOL transfer transaction directly to validator
+  - [ ] During `market_status == CLOSED`
+- [ ] **Expected result**: Transaction REVERTED at Runtime level
+  - [ ] Error: `0x1702 (StockMarketClosed)`
+  - [ ] **Proof**: Token 2022 Transfer Hook is MANDATORY, cannot be bypassed
+
+### Demo 2: Dynamic Stamp Tax Visualization
+
+- [ ] Write high-frequency transfer script:
+  - [ ] Send rapid transfers in a loop
+  - [ ] Watch `velocity` counter spike
+- [ ] Frontend dashboard:
+  - [ ] Real-time chart: stamp tax rate (0.1% → 5.0%)
+  - [ ] Velocity counter over time
+  - [ ] Show Solana compute units staying STABLE despite complex math
+
+### Demo 3: Stock Split Zero-Iteration Magic
+
+- [ ] Before split: user A has 100 AAPL tokens
+- [ ] Admin calls `trigger_stock_split(5)`
+- [ ] **Key**: all on-chain token account balances = UNCHANGED
+- [ ] Frontend calls `get_effective_balance(A)` → displays 500
+- [ ] **Proof**: corporate actions without O(n) user iteration
+
+---
+
+## 四、Intentional Bugs (Krastor Fuzzer Targets)
+
+| # | Bug | Location | Proptest | Krastor |
+|---|-----|----------|----------|---------|
+| 1 | Split multiplier overflow in view fn | `get_effective_balance()`: `balance * multiplier` | ~0% — random rarely hits overflow | `flip_data` 40%/round |
+| 2 | Velocity counter window race | `execute_transfer_hook()`: concurrent writes to `Velocity` | 0% — no parallel model | auto-sequence + `flip_data` |
+| 3 | Dividend double-claim | `claim_dividend()`: no claimed flag check | 0% — no multi-claim model | auto-sequence: claim → claim |
+| 4 | Market hours bypass via Clock sysvar | `execute_transfer_hook()`: `Clock::unix_timestamp` | 0% — no sysvar model | `flip_data` targets Clock |
+| 5 | Dividend pool USDC not fully funded | `claim_dividend()`: pool balance < total claims | 0% — no pool invariant | `zero_lamports` drains pool |
+| 6 | Metadata pointer overwrite | `initialize()`: no existence check | 0% — no re-init model | auto-sequence: init → init |
+| 7 | Stamp tax calculation overflow | `execute_transfer_hook()`: `amount * tax_bps / 10000` | ~0% — rare extreme | `flip_data` 40%/round |
+| 8 | Split effective date manipulation | `trigger_stock_split()`: future date not validated | 0% — no time model | `flip_data` + Clock |
+
+---
+
+## 五、Krastor Mutators for This Project
+
+| Mutator | Target | How It Triggers |
+|---------|--------|----------------|
+| `replace_owner` (10%) | Admin authority spoof | Calls `trigger_stock_split` as attacker |
+| `flip_data` (40%) | Split multiplier, velocity, tax rate | Pushes values to overflow boundaries |
+| `zero_lamports` (10%) | Dividend pool drain | Sets USDC pool lamports to 0 |
+| `swap_signer` (15%) | Transfer hook bypass | Flips signer on hook execution |
+| auto-sequence | Dividend double-claim | Generates `claim → claim` sequences |
+
+---
+
+## 六、Account Layout (Solana)
+
+```
+GlobalConfig (PDA, seeds=[b"config"]):
+  admin: Pubkey            // 32 bytes
+  split_multiplier: u64    // 8 bytes
+  market_status: u8        // 1 byte (0=OPEN, 1=CLOSED, 2=PRE)
+  base_stamp_tax_bps: u64  // 8 bytes
+  bump: u8                 // 1 byte
+
+Velocity (PDA, seeds=[b"velocity", user.key()]):
+  owner: Pubkey            // 32 bytes
+  window_start: i64        // 8 bytes
+  transfer_count: u64      // 8 bytes
+  bump: u8                 // 1 byte
+
+DividendSnapshot (PDA, seeds=[b"dividend", slot]):
+  slot: u64                // 8 bytes
+  total_supply: u64        // 8 bytes (physical snapshot)
+  dividend_per_share: u64  // 8 bytes (in USDC smallest unit)
+  pool_lamports: u64       // 8 bytes
+
+DividendClaim (PDA, seeds=[b"claim", user.key(), slot]):
+  claimed: bool            // 1 byte
+  amount: u64              // 8 bytes
+```
+
+---
+
+## 七、Implementation Priority
+
+```
+Phase 1 (Core)     → Token 2022 Mint + Transfer Hook + Market Hours
+Phase 2 (Risk)     → Velocity Tracker + Dynamic Stamp Tax
+Phase 3 (Events)   → Stock Split + View Function
+Phase 4 (Finance)  → Dividend Snapshot + Claim
+Phase 5 (Showcase) → Relayer + Dashboard + Hacker Demo Scripts
+```
+
+---
+
+*Spec from: stock.txt | Generated: 2026-05-25 · arielzsh/shipkit*
