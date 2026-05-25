@@ -1,8 +1,20 @@
 //! Vulnerable Anchor Program — 3 known bugs for Krastor validation.
 //!
-//! Bug 1: Arithmetic overflow (deposit: unchecked +)
-//! Bug 2: Authorization bypass (withdraw: no owner check)
-//! Bug 3: State inconsistency (flash_loan: borrow counter race)
+//! ⚠️  DEMO ONLY — NOT FOR PRODUCTION USE
+//!
+//! ## Bugs & Proptest Comparison
+//!
+//! | # | Bug | Location | Proptest | Krastor |
+//! |---|-----|----------|----------|--------|
+//! | 1 | Arithmetic overflow | `deposit()`: `vault.total_supply += amount` | ~0% — random u64 rarely hits overflow | `flip_data` 40%/round targets edge values |
+//! | 2 | Authorization bypass | `withdraw()`: no owner check | 0% — doesn't model "who should be authorized" | `replace_owner` 10%/round × `swap_signer` 15%/round |
+//! | 3 | Borrow counter race | `flash_loan()`: counter updated after transfer | ~0% — needs exact interleaved timing | auto-sequence discovery generates flash_loan patterns |
+//!
+//! Proptest treats each instruction parameter as independent random values.
+//! It cannot correlate account identities across instruction calls, cannot
+//! target overflow boundaries, and has no concept of transaction ordering
+//! within a sequence. Krastor's Solana-aware mutations (owner, signer, seeds,
+//! lamports) directly attack the program's authorization model.
 
 use anchor_lang::prelude::*;
 

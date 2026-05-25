@@ -93,3 +93,22 @@ jobs:
 
       - name: Run smoke tests
         run: cargo test --test smoke_test -p krastor-fuzz-core -- --nocapture
+
+  build-examples:
+    name: Build Example Programs (SBF)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Build meme-coin (SBF)
+        working-directory: examples/meme-coin
+        run: cargo build-sbf
+
+      - name: Build vulnerable (SBF)
+        working-directory: examples/vulnerable
+        run: cargo build-sbf

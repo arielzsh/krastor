@@ -18,16 +18,32 @@
 //! LP      → remove_liquidity(LP) → get SOL + MEME back
 //! ```
 //!
-//! ## Intentional Bugs (Krastor Targets)
+//! ## Intentional Bugs (Krastor Targets — with Proptest Comparison)
 //!
-//! | # | Bug | Location | Type | Krastor Mutator |
-//! |---|-----|----------|------|-----------------|
-//! | 1 | Mint authority NOT revoked | `create_pool()` | Infinite mint | owner mut |
-//! | 2 | AMM constant product overflow | `buy()` / `sell()` | Flash loan attack | flip_data |
-//! | 3 | No slippage protection | `buy()` / `sell()` | Sandwich attack | auto-seq |
-//! | 4 | LP token ratio miscalculation | `add_liquidity()` | LP fund loss | flip_data |
-//! | 5 | Fee calculation bypass | `buy()` | Fee evasion | zero_lamports |
-//! | 6 | Unchecked arithmetic on withdraw | `sell()` | Underflow | flip_data |
+//! | # | Bug | Location | Type | Proptest | Krastor |
+//! |---|-----|----------|------|----------|--------|
+//! | 1 | Mint authority NOT revoked | `create_pool()` | Infinite mint | 0% — doesn't model auth | `replace_owner` 10%/round |
+//! | 2 | AMM `k = x*y` overflow | `buy()` / `sell()` | Flash loan attack | ~0% — needs exact amounts | `flip_data` 40%/round |
+//! | 3 | No slippage protection | `buy()` / `sell()` | Sandwich attack | 0% — no seq correlation | auto-sequence discovery |
+//! | 4 | LP ratio miscalculation | `add_liquidity()` | LP fund loss | ~0% — random deposits | `flip_data` × sequence |
+//! | 5 | Fee bypass (integer div) | `buy()` | Fee evasion | ~0% — exact value needed | `flip_data` explores amounts |
+//! | 6 | Unchecked underflow | `sell()` | Reserve drain | ~0% — needs flash loan | `zero_lamports` + `flip_data` |
+//!
+//! ### Why Proptest Cannot Find These Bugs
+//!
+//! Proptest treats this program as a black box: generate random `u64` values
+//! for `sol_in`/`token_in`, random `Pubkey` for accounts, random bool for `paused`.
+//!
+//! - **Bug 1 (mint authority)**: proptest generates random signers but has
+//!   no concept of "mint authority = creator". It can't know to reuse the
+//!   creator's keypair across calls.
+//! - **Bug 2-6 (arithmetic)**: proptest might stumble on an overflow value
+//!   with probability ≈ 1/2^64 × 1/search_space ≈ 0%. It doesn't target
+//!   edge values specifically.
+//! - **Bug 3 (sandwich)**: proptest generates independent random rounds —
+//!   no concept of transaction ordering within a sequence.
+//!
+//! Krastor finds all 6 with directed Solana-aware mutations.
 
 use anchor_lang::prelude::*;
 
