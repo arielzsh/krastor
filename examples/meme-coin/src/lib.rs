@@ -289,9 +289,9 @@ pub mod meme_coin {
         // This implementation uses a naive equal-weight calculation.
         let lp_to_mint = if pool.lp_supply == 0 {
             // Initial LP = geometric mean
-            ((sol_in as u128) * (token_in as u128))
+            (((sol_in as u128) * (token_in as u128))
                 .checked_sqrt()
-                .unwrap_or(0) as u64
+                .unwrap_or(0) as u64)
                 .checked_sub(MINIMUM_LIQUIDITY)
                 .unwrap_or(0)
         } else {
