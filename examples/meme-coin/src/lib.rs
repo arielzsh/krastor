@@ -288,12 +288,11 @@ pub mod meme_coin {
         // they should receive LP tokens based on the MINIMUM of the two ratios.
         // This implementation uses a naive equal-weight calculation.
         let lp_to_mint = if pool.lp_supply == 0 {
-            // Initial LP = geometric mean
-            (((sol_in as u128) * (token_in as u128))
-                .checked_sqrt()
-                .unwrap_or(0) as u64)
-                .checked_sub(MINIMUM_LIQUIDITY)
-                .unwrap_or(0)
+            // Initial LP: use sqrt(x*y) approximation via simple formula
+            // BUG 4: doesn't handle the case correctly
+            let product = (sol_in as f64) * (token_in as f64);
+            let sqrt = product.sqrt() as u64;
+            sqrt.saturating_sub(MINIMUM_LIQUIDITY)
         } else {
             // BUG: Doesn't handle imbalanced deposits!
             // Should be: lp = min(sol_in * lp_total / sol_reserve, token_in * lp_total / token_reserve)
@@ -351,17 +350,17 @@ pub mod meme_coin {
         require!(lp_amount <= pool.lp_supply, MemeCoinError::InsufficientLiquidity);
 
         // Calculate share of reserves
-        let sol_share = (pool.sol_reserve as u128)
+        let sol_share = ((pool.sol_reserve as u128)
             .checked_mul(lp_amount as u128)
             .ok_or(MemeCoinError::Overflow)?
             .checked_div(pool.lp_supply as u128)
-            .ok_or(MemeCoinError::Overflow)? as u64;
+            .ok_or(MemeCoinError::Overflow)?) as u64;
 
-        let token_share = (pool.token_reserve as u128)
+        let token_share = ((pool.token_reserve as u128)
             .checked_mul(lp_amount as u128)
             .ok_or(MemeCoinError::Overflow)?
             .checked_div(pool.lp_supply as u128)
-            .ok_or(MemeCoinError::Overflow)? as u64;
+            .ok_or(MemeCoinError::Overflow)?) as u64;
 
         // Burn LP tokens
         token_burn(
