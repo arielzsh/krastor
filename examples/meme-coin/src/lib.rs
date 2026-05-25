@@ -101,6 +101,8 @@ pub mod meme_coin {
         // Mint initial tokens to the creator
         // BUG 1: mint authority is NOT revoked after this
         // The creator can call mint_to() again at any time!
+        // PROPTEST: 0% — no concept of "authority should be revoked"
+        // KRASTOR:   replace_owner + swap_signer → 10%/round detects this
         token_mint_to(
             &ctx.accounts.token_program,
             &ctx.accounts.mint,
@@ -143,6 +145,8 @@ pub mod meme_coin {
 
         // Calculate fee
         // BUG 5: For sol_in < 333, fee = 0 (333 * 30 / 10000 = 0 due to integer division)
+        // PROPTEST: ~0% — random u64 rarely hits fee-bypass values
+        // KRASTOR:   flip_data mutator (40%/round) explores edge amounts
         let fee = sol_in
             .checked_mul(FEE_BPS)
             .ok_or(MemeCoinError::Overflow)?
@@ -154,6 +158,8 @@ pub mod meme_coin {
             .ok_or(MemeCoinError::Overflow)?;
 
         // BUG 2: Unchecked multiplication — can overflow!
+        // PROPTEST: ~0% — random values rarely produce u64 overflow
+        // KRASTOR:   flip_data (40%/round) injects extreme values
         // k = x * y, but k_new should be k_old + sol_after_fee * token_reserve
         //
         // Correct: token_out = token_reserve * sol_after_fee / (sol_reserve + sol_after_fee)
@@ -168,6 +174,8 @@ pub mod meme_coin {
         };
 
         // BUG 3: No minimum-out check — no slippage protection
+        // PROPTEST: 0% — no concept of tx ordering within a sequence
+        // KRASTOR:   auto-sequence discovery generates sandwich patterns
         require!(token_out > 0, MemeCoinError::InsufficientLiquidity);
 
         // Transfer SOL from buyer to pool
@@ -238,6 +246,8 @@ pub mod meme_coin {
             .ok_or(MemeCoinError::Overflow)?;
 
         // BUG 2: Unchecked multiplication — can overflow!
+        // PROPTEST: ~0% — same as buy() overflow logic
+        // KRASTOR:   flip_data (40%/round) targets extreme token_in values
         let numerator = pool.sol_reserve * token_after_fee;    // ← OVERFLOW!
         let denominator = pool.token_reserve + token_after_fee; // ← OVERFLOW!
 
@@ -270,6 +280,8 @@ pub mod meme_coin {
 
         // Update reserves
         // BUG 6: If token_reserve was manipulated, this can underflow
+        // PROPTEST: 0% — random values don't create flash-loan-like conditions
+        // KRASTOR:   zero_lamports + flip_data → inflates token supply
         pool.token_reserve = pool.token_reserve + token_after_fee; // ← OVERFLOW!
         pool.sol_reserve = pool.sol_reserve - sol_out;             // ← UNDERFLOW!
         pool.total_fees_collected = pool.total_fees_collected + fee; // ← OVERFLOW!
@@ -311,6 +323,8 @@ pub mod meme_coin {
         let lp_to_mint = if pool.lp_supply == 0 {
             // Initial LP: use sqrt(x*y) approximation via simple formula
             // BUG 4: doesn't handle the case correctly
+            // PROPTEST: ~0% — random deposits don't expose ratio skew
+            // KRASTOR:   flip_data + auto-sequence → imbalanced deposits
             let product = (sol_in as f64) * (token_in as f64);
             let sqrt = product.sqrt() as u64;
             sqrt.saturating_sub(MINIMUM_LIQUIDITY)
@@ -495,6 +509,8 @@ pub struct CreatePool<'info> {
         payer = creator,
         mint::decimals = 9,
         mint::authority = creator, // ← BUG 1: authority = creator, never revoked!
+        // PROPTEST: 0% — doesn't model mint authorities
+        // KRASTOR:   replace_owner (10%/round) targets this
         mint::freeze_authority = creator,
     )]
     pub mint: Account<'info, anchor_spl::token::Mint>,
@@ -626,6 +642,8 @@ pub struct SetPaused<'info> {
 #[account]
 pub struct Pool {
     /// Creator's pubkey (also the mint authority — BUG 1!)
+    /// PROPTEST: never changes this field — random bytes ≠ owner replacement
+    /// KRASTOR:  replace_owner mutator (10%/round) directly overwrites this
     pub creator: Pubkey,
     /// The token mint address
     pub mint: Pubkey,
