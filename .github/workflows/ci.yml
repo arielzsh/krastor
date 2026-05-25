@@ -105,10 +105,10 @@ jobs:
           sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Build meme-coin (SBF)
-        working-directory: examples/meme-coin
+      - name: Build 00-vulnerable (SBF)
+        working-directory: examples/00-vulnerable
         run: cargo build-sbf
 
-      - name: Build vulnerable (SBF)
-        working-directory: examples/vulnerable
+      - name: Build 01-meme-coin (SBF)
+        working-directory: examples/01-meme-coin
         run: cargo build-sbf
