@@ -31,4 +31,4 @@ A **real-world asset tokenization system based on the carbon emissions market** 
 
 ---
 
-*Built by arielzsh 🦭 with Krastor — example program for fuzzer validation*
+*Built by arielzsh 🦭 with Krastor · Bubblegum Labs 🫧 — example program for fuzzer validation*

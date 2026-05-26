@@ -228,4 +228,4 @@ Phase 5 (Showcase) → Relayer + Dashboard + Hacker Demo Scripts
 
 ---
 
-*Spec from: stock.txt | Generated: 2026-05-25 · arielzsh/shipkit*
+*Spec from: stock.txt | Generated: 2026-05-25 · arielzsh · Bubblegum Labs*

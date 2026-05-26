@@ -31,4 +31,4 @@ A **real-world asset platform for tokenizing government and corporate bonds** on
 
 ---
 
-*Built by arielzsh 🦭 with Krastor — example program for fuzzer validation*
+*Built by arielzsh 🦭 with Krastor · Bubblegum Labs 🫧 — example program for fuzzer validation*

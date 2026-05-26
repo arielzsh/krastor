@@ -81,4 +81,4 @@ Krastor catches all three within ~1000 iterations.
 
 ## License
 
-MIT © arielzsh / shipkit
+MIT © arielzsh / Bubblegum Labs 🫧

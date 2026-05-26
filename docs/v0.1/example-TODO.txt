@@ -224,4 +224,4 @@ P2 (远期)  → GameFi (高，验证多状态交互)
 
 ---
 
-*Created: 2026-05-25 · arielzsh/shipkit*
+*Created: 2026-05-25 · arielzsh · Bubblegum Labs*

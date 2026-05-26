@@ -31,4 +31,4 @@ A **micro-fractionalization and distribution platform** for high-barrier traditi
 
 ---
 
-*Built by arielzsh 🦭 with Krastor — example program for fuzzer validation*
+*Built by arielzsh 🦭 with Krastor · Bubblegum Labs 🫧 — example program for fuzzer validation*

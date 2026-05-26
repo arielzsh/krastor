@@ -30,4 +30,4 @@ A **high-frequency cryptocurrency quantitative trading and automated copy-tradin
 
 ---
 
-*Built by arielzsh 🦭 with Krastor — example program for fuzzer validation*
+*Built by arielzsh 🦭 with Krastor · Bubblegum Labs 🫧 — example program for fuzzer validation*

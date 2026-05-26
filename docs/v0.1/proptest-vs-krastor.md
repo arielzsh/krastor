@@ -1,6 +1,6 @@
 # Krastor vs Proptest — Test Comparison Summary
 
-> Generated: 2026-05-25 · arielzsh/shipkit
+> Generated: 2026-05-25 · arielzsh · Bubblegum Labs
 
 ---
 
@@ -167,4 +167,4 @@ Proptest is an excellent general-purpose fuzzer for data structures. But **Solan
 
 ---
 
-*Built by arielzsh 🦭 with Krastor + LiteSVM*
+*Built by arielzsh 🦭 with Krastor · Bubblegum Labs 🫧 + LiteSVM*

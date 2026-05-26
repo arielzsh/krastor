@@ -1,6 +1,6 @@
 # Krastor — Coverage-Guided Fuzzer for Solana Programs
 
-> renascence of Ackee Blockchain's Trident · arielzsh/shipkit · 2026-05-23
+> renascence of Ackee Blockchain's Trident · arielzsh · Bubblegum Labs · 2026-05-23
 
 ## 概念模型
 

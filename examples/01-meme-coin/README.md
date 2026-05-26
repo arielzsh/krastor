@@ -304,4 +304,4 @@ cargo run --release -- fuzz run \
 
 ---
 
-*Built by arielzsh 🦭 with Krastor + LiteSVM*
+*Built by arielzsh 🦭 with Krastor · Bubblegum Labs 🫧 + LiteSVM*

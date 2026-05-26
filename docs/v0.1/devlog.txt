@@ -105,4 +105,4 @@ krastor/
 
 ---
 
-*Generated: 2026-05-23 · arielzsh/shipkit*
+*Generated: 2026-05-23 · arielzsh · Bubblegum Labs*
