@@ -113,6 +113,10 @@ jobs:
         working-directory: examples/01-meme-coin
         run: cargo build-sbf
 
+      - name: Build 02-nft (SBF)
+        working-directory: examples/02-nft
+        run: cargo build-sbf
+
       - name: Build 03-stock (SBF)
         working-directory: examples/03-stock
         run: cargo build-sbf

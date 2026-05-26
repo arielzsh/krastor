@@ -1,0 +1,18 @@
+# ⚠️  DISCLAIMER — NOT FOR PRODUCTION USE
+# Demo program with intentional bugs for Krastor fuzzer validation.
+
+[package]
+name = "nft"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "🦭 Fully on-chain generative pixel art NFT (demo only)"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "nft"
+
+[workspace]
+
+[dependencies]
+anchor-lang = { version = "0.30", features = ["init-if-needed"] }
